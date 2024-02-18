@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
+    "git": "git add . && git commit -m quickCommit && git push",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
