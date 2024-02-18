@@ -10,3 +10,6 @@ node_modules/
 #build and distribution files
 dist/
 build/
+
+#output files
+BOIBpdfs/

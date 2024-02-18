@@ -212,10 +212,10 @@ const downloadPdfs = async (links) => {
     //console.log(links);
     let date = lastBoibInfo.dateLastBoib;
     const folderName = `${lastBoibInfo.idAnualBoib}_${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}`;
-    const folderPath = path.resolve(__dirname, folderName) + "/";
+    const folderPath = path.resolve(__dirname, 'BOIBpdfs', folderName) + "/";
     const spinner = ora(`Los pdfs se descargan en:\n${folderPath}`).start()
     for (let link of links) {
-        await download(link, folderName);  
+        await download(link, folderPath);  
         spinner.text = `Descargado ${link}`;
     }
     spinner.succeed(`Descarga completada`)
