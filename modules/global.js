@@ -10,12 +10,11 @@ const wordsToSearch = [
     "FOTOPAR",
     "Energia i Canvi Climàtic",
     "Transcició Energètica i Canvi CLimàtic",
-    "FEDER",
-    "Llucmajor"
+    "FEDER"
 ];
 
 //customers to look for
-const customers = ['John Doe', 'Marisa Geller']
+const customers = ['TUR COSTA', 'MARI TORRES']
 
 //email constants
 const emailUser = process.env.OUTLOOK_USER

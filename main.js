@@ -33,6 +33,7 @@ const resetInfo = () => {
         idAnualBoib: 0,
         dateLastBoib: "",
         linkUltimoBoletin: "",
+        customersMatched: [],
         sectionLinks: []
     } 
 }
@@ -210,11 +211,39 @@ const downloadPdfs = async (links) => {
 }
 
 const searchForCustomers = async (links) => {
+    console.log(`Looking for ${customers} in: \n${links}\n`);
+    let numMatches = 0;
+    
+    for (let link of links) {
 
-    const res = await axios.get(links[0])
-    const $ = cheerio.load(res.data);
+        const res = await axios.get(link)
+        const $ = cheerio.load(res.data);
+        const tables = $('table')
 
-    //buscar clientes
+        tables.each((i, table) => {
+            const rows = $(table).find('tr'); // select all rows in the current table
+        
+            rows.each((j, row) => {
+                const cells = $(row).find('td'); // select all cells in the current row
+        
+                cells.each((k, cell) => {
+                    const cellText = $(cell).text();
+                    //console.log(cellText);                    
+                    customers.forEach(customer => {
+                        if (cellText.toLowerCase().includes(customer.toLowerCase())) {
+                            numMatches++
+                            let match = `Table ${i + 1}, row ${j + 1}, cell ${k + 1}: ${cellText.trim()}`;
+                            lastBoibInfo.customersMatched.push(match)
+                            console.log(`Match found in ${match}`);
+                        }
+                    });
+                });
+            });
+        });
+    
+    }
+
+console.log(`Se han encontrado ${numMatches} coincidencias`);
 
 }
 
@@ -275,20 +304,23 @@ const main = async () => {
 
     //función para buscar si alguna de las palabras en 'wordsToSearh' se encuentra en alguna de las descripciones y obtener el objeto
     const filteredList = getSpecificBoib(wordsToSearch);
-    if (!(filteredList.length == 0)) {
+    if (filteredList.length !== 0) {
         let pdfLinks = filteredList.map(x => x.downloadPdfLink);
         let htmlLinks = filteredList.map(x => x.htmlLink);
-        searchForCustomers(htmlLinks);
-        //enviar email como notificación
-        //sendEmail()
+
         await downloadPdfs(pdfLinks);
+
+        if (true) {
+            await searchForCustomers(htmlLinks);
+            
+        }
     }
-
+    
     await writeDataBase();
-
+    
     await sendEmailWithAttachments();
     //here we could add an EAUTH error management
-
+    
     //coger los html links
     //ir a cada página y  buscar el nombre de los clientes
     //avisar de qué documento es que hay algún cliente que aparece
