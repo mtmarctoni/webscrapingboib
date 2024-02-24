@@ -38,6 +38,7 @@ let transporter = nodemailer.createTransport({
 //auxiliary constants
 const months = ['gener', 'febrer', 'març', 'abril', 'maig', 'juny', 'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre'];
 let lastBoibInfo = {};
+let previousBoibInfo = {};
 let previousBoibLink = "";
 let downloadedPdfPaths = [];
 
@@ -53,6 +54,6 @@ module.exports = {
     transporter,
     months,
     lastBoibInfo,
-    previousBoibLink,
+    previousBoibInfo,
     downloadedPdfPaths
 }

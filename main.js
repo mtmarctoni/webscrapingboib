@@ -21,21 +21,21 @@ const {
 let {
     transporter,
     lastBoibInfo,
-    previousBoibLink,
+    previousBoibInfo,
     downloadedPdfPaths
 } = require('./modules/global')
 
-const resetInfo = () => {
-    lastBoibInfo = {
-        ultimoBoletin: "",
-        isExtraordinary: false,
-        idBoib: 0,
-        idAnualBoib: 0,
-        dateLastBoib: "",
-        linkUltimoBoletin: "",
-        customersMatched: [],
-        sectionLinks: []
-    } 
+const resetInfo = (object) => {
+    
+    object.ultimoBoletin = "";
+    object.isExtraordinary = false;
+    object.idBoib = 0;
+    object.idAnualBoib = 0;
+    object.dateLastBoib = "";
+    object.linkUltimoBoletin = "";
+    object.customersMatched= [];
+    object.sectionLinks = [];
+    
 }
 
 
@@ -45,13 +45,13 @@ const readDataBase = () => {
         const res = await fs.readFile('lastBoibInfo.json', 'utf8');
         if (!res) {
             console.log('Archivo json vacío.');
-            resetInfo();
+            resetInfo(lastBoibInfo);
 
         } else {
             const data = JSON.parse(res)
-            lastBoibInfo = data;
+            previousBoibInfo = data;
+            resetInfo(lastBoibInfo);
             console.log('Datos obtenidos de la base de datos');
-            previousBoibLink = lastBoibInfo.linkUltimoBoletin;
 
         }
 
@@ -131,40 +131,51 @@ const getDocLists = (sectionLink) => {
     return axios.get(sectionLink)
     .then(response => {
         const html = response.data;
-        const $ = cheerio.load(html);    
-        const $docList = cheerio.load($('.llistat').prop('outerHTML'));
-        //let counter = 0;
-        
-        
-        $docList('ul.resolucions').each((j, elems) => {
-            let docListObject = {
-                id: j,
-                htmlLink: "",
-                description: "",
-                downloadPdfLink: ""
-            }
+        const $ = cheerio.load(html);
+        const llistatElement = $('.llistat');
 
-            $docList(elems).find('a').each((i, elem) => {
-            let link = $docList(elem).attr('href');
-            //console.log(fatherElement);            
-            //console.log(link);            
-            
-            if (link.startsWith('/eboibfront/pdf/')) {
-                let description = $docList(elem).parents('ul.resolucions').first().find('p').first().text();
-                docListObject.downloadPdfLink = domainUrl + link;
-                docListObject.description = description;
-            } else if (link.includes('intranet.caib.es') && !(link.endsWith('rdf'))) {
-                docListObject.htmlLink = link;
-
-            } else {
-                //console.log(docListObject);
-                lastBoibInfo.sectionLinks[sectionObject.id].docList.push(docListObject);
+        if (llistatElement.length) {
+            const $docList = cheerio.load(llistatElement.prop('outerHTML'));
+            // Continúa con tu código aquí...
+            $docList('ul.resolucions').each((j, elems) => {
+                let docListObject = {
+                    id: "",
+                    htmlLink: "",
+                    description: "",
+                    downloadPdfLink: ""
+                }
+    
+                $docList(elems).find('a').each((i, elem) => {
+                let link = $docList(elem).attr('href');
+                //console.log(fatherElement);            
+                //console.log(link);
                 
-            }
+                if (link.startsWith('/eboibfront/pdf/')) {
+                    let description = $docList(elem).parents('ul.resolucions').first().find('p').first().text();
+                    let idText = $docList(elem).parents('ul.resolucions').first().find('p.registre').first().text().trim();
+                    let id = idText.split('-')[0].split(' ').reverse()[1]
+                    docListObject.downloadPdfLink = domainUrl + link;
+                    docListObject.description = description;
+                    docListObject.id = id;
+                } else if (link.includes('intranet.caib.es') && !(link.endsWith('rdf'))) {
+                    docListObject.htmlLink = link;
+    
+                } else {
+                    //console.log(docListObject);
+                    lastBoibInfo.sectionLinks[sectionObject.id].docList.push(docListObject);
+                    
+                }
+                
+                })
             
             })
+            
+            
+            
+        } else {
+            console.log("No se ha encontrado el elemento con la clase 'llistat'. en " + sectionLink);
+        }      
         
-        })
        
     })
     .catch(console.error);
@@ -172,7 +183,6 @@ const getDocLists = (sectionLink) => {
 }
 
 const getSpecificBoib = (wordsToSearch) => {
-
     console.log(`\nBuscando documentos que contengan:\n${wordsToSearch}\n`);
     //flatMap does the same as map but 'flatting' the output in one  single array instead of an array of arrays
     let filteredList = lastBoibInfo.sectionLinks.flatMap(section => {
@@ -215,11 +225,20 @@ const searchForCustomers = async (links) => {
     let numMatches = 0;
     
     for (let link of links) {
-
+        //first we get the doc id
+        let docObj;
+        lastBoibInfo.sectionLinks.forEach(sectionLink => {
+            sectionLink.docList.forEach(obj => {
+                if (obj.htmlLink === link) {
+                    docObj = obj;
+                }
+            })
+        })
+        //console.log('ID: ' + id);
         const res = await axios.get(link)
         const $ = cheerio.load(res.data);
         const tables = $('table')
-
+        //let section = $('#boibDetall').text()
         tables.each((i, table) => {
             const rows = $(table).find('tr'); // select all rows in the current table
         
@@ -232,7 +251,7 @@ const searchForCustomers = async (links) => {
                     customers.forEach(customer => {
                         if (cellText.toLowerCase().includes(customer.toLowerCase())) {
                             numMatches++
-                            let match = `Table ${i + 1}, row ${j + 1}, cell ${k + 1}: ${cellText.trim()}`;
+                            let match = `PDF ${docObj.id} -> Table ${i + 1}, row ${j + 1}, cell ${k + 1}: ${cellText.trim()}`;
                             lastBoibInfo.customersMatched.push(match)
                             console.log(`Match found in ${match}`);
                         }
@@ -283,7 +302,7 @@ const main = async () => {
 
     await readDataBase();
     await getLastBoib();
-    if (lastBoibInfo.linkUltimoBoletin === previousBoibLink) {
+    if (lastBoibInfo.linkUltimoBoletin === previousBoibInfo.linkUltimoBoletin) {
         console.log("No hay nuevo BOIB");
         console.log(`${lastBoibInfo.ultimoBoletin}\n`);
         console.log('Saliendo...');
@@ -296,7 +315,7 @@ const main = async () => {
     await getSectionLinks(lastBoibInfo.linkUltimoBoletin);
     //console.log(lastBoibInfo.sectionLinks);
 
-    for (let i = 1; i < lastBoibInfo.sectionLinks.length; i++) {
+    for (let i = 0; i < lastBoibInfo.sectionLinks.length; i++) {
         //console.log(`Link ${i} ${lastBoibInfo.sectionLinks[i].titulo}`);
         await getDocLists(lastBoibInfo.sectionLinks[i].link);
 
