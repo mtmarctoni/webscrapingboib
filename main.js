@@ -25,17 +25,19 @@ let {
     downloadedPdfPaths
 } = require('./modules/global')
 
-const resetInfo = (object) => {
-    
-    object.ultimoBoletin = "";
-    object.isExtraordinary = false;
-    object.idBoib = 0;
-    object.idAnualBoib = 0;
-    object.dateLastBoib = "";
-    object.linkUltimoBoletin = "";
-    object.customersMatched= [];
-    object.sectionLinks = [];
-    
+const resetInfo = () => {
+    const newInfo = {
+        ultimoBoletin: "",
+        isExtraordinary: false,
+        idBoib: 0,
+        idAnualBoib: 0,
+        dateLastBoib: "",
+        linkUltimoBoletin: "",
+        customersMatched: [],
+        sectionLinks: []
+    };
+
+    return newInfo;
 }
 
 
@@ -45,12 +47,12 @@ const readDataBase = () => {
         const res = await fs.readFile('lastBoibInfo.json', 'utf8');
         if (!res) {
             console.log('Archivo json vacío.');
-            resetInfo(lastBoibInfo);
+            lastBoibInfo = resetInfo();
 
         } else {
             const data = JSON.parse(res)
             previousBoibInfo = data;
-            resetInfo(lastBoibInfo);
+            lastBoibInfo = resetInfo();
             console.log('Datos obtenidos de la base de datos');
 
         }
