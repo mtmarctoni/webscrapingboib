@@ -13,4 +13,4 @@ build/
 
 #output files
 BOIBpdfs/
-/lastBoibInfo.json
+lastBoibInfo.json
