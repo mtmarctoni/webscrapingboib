@@ -14,9 +14,14 @@ const wordsToSearch = [
 ];
 
 //customers to look for
-const customers = ['TUR COSTA', 'MARI TORRES']
+const customers = [
+    'GRIMALT ADROVER',
+    'FLORES CAÑELLAS',
+    'CLAR ORELL'
+]
 
 //email constants
+const sendEmailBool = false;
 const emailUser = process.env.OUTLOOK_USER
 const emailPassword = process.env.OUTLOOK_PASSWORD
 const emailBody = 
@@ -37,9 +42,9 @@ let transporter = nodemailer.createTransport({
 
 //auxiliary constants
 const months = ['gener', 'febrer', 'març', 'abril', 'maig', 'juny', 'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre'];
+const lastBoibInfoFile = 'lastBoibInfo.json';
 let lastBoibInfo = {};
 let previousBoibInfo = {};
-let previousBoibLink = "";
 let downloadedPdfPaths = [];
 
 //export variables
@@ -48,11 +53,13 @@ module.exports = {
     url,
     wordsToSearch,
     customers,
+    sendEmailBool,
     emailUser,
     emailPassword,
     emailBody,
     transporter,
     months,
+    lastBoibInfoFile,
     lastBoibInfo,
     previousBoibInfo,
     downloadedPdfPaths

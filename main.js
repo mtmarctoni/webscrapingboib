@@ -1,6 +1,7 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const sfs = require('fs');
 const fs = require('fs').promises;
 //require("dotenv").config();
 const download = require('download');
@@ -13,9 +14,11 @@ const {
     url,
     wordsToSearch,
     customers,
+    sendEmailBool,
     emailUser,
     emailBody,
-    months
+    months,
+    lastBoibInfoFile
 } = require('./modules/global')
 
 let {
@@ -44,17 +47,26 @@ const resetInfo = () => {
 const readDataBase = () => {
 
     return new Promise(async (resolve, reject) => {
-        const res = await fs.readFile('lastBoibInfo.json', 'utf8');
-        if (!res) {
-            console.log('Archivo json vacío.');
+ 
+        if (!sfs.existsSync(lastBoibInfoFile)) {
+            console.log('Archivo json no existe. Creando uno nuevo...');
             lastBoibInfo = resetInfo();
-
+            await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo), 'utf8');
+            console.log(`Archivo ${lastBoibInfoFile} creado.`);
         } else {
-            const data = JSON.parse(res)
-            previousBoibInfo = data;
-            lastBoibInfo = resetInfo();
-            console.log('Datos obtenidos de la base de datos');
-
+            const res = await fs.readFile(lastBoibInfoFile, 'utf8');
+            if (!res) {
+                console.log('Archivo json vacío.');
+                lastBoibInfo = resetInfo();
+    
+            } else {
+                const data = JSON.parse(res)
+                previousBoibInfo = data;
+                lastBoibInfo = resetInfo();
+                console.log('Datos obtenidos de la base de datos');
+    
+            }
+            
         }
 
         resolve()
@@ -339,13 +351,10 @@ const main = async () => {
     
     await writeDataBase();
     
-    await sendEmailWithAttachments();
-    //here we could add an EAUTH error management
-    
-    //coger los html links
-    //ir a cada página y  buscar el nombre de los clientes
-    //avisar de qué documento es que hay algún cliente que aparece
-    //descargar esos documentos
+    if (sendEmailBool) {
+        await sendEmailWithAttachments();
+        //here we could add an EAUTH error management
+    }
 }
 
 main();    
