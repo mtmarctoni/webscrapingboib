@@ -2,6 +2,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const sfs = require('fs');
+const util = require('util');
 const fs = require('fs').promises;
 //require("dotenv").config();
 const download = require('download');
@@ -25,8 +26,19 @@ let {
     transporter,
     lastBoibInfo,
     previousBoibInfo,
-    downloadedPdfPaths
+    downloadedPdfPaths,
+    numMatches
 } = require('./modules/global')
+
+let logStream = sfs.createWriteStream('output.txt', {flags: 'a'});
+
+// Save old console.log in a variable
+let oldLog = console.log;
+
+console.log = function (message) {
+  oldLog.apply(console, arguments);
+  logStream.write(util.format(message) + '\n');
+};
 
 const resetInfo = () => {
     const newInfo = {
@@ -236,7 +248,7 @@ const downloadPdfs = async (links) => {
 
 const searchForCustomers = async (links) => {
     console.log(`Looking for ${customers} in: \n${links}\n`);
-    let numMatches = 0;
+    numMatches = 0;
     
     for (let link of links) {
         //first we get the doc id
@@ -284,7 +296,7 @@ const writeDataBase = () => {
     console.log('Escribiendo datos obtenidos en la base de datos');
 
     return new Promise(async (resolve, reject) => {
-        await fs.writeFile('lastBoibInfo.json', JSON.stringify(lastBoibInfo, null, 0));
+        await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo, null, 0));
         console.log('Datos guardados');
         resolve();
         });
@@ -293,6 +305,38 @@ const writeDataBase = () => {
 
 const sendEmailWithAttachments = () => {
     //console.log(downloadedPdfPaths);
+    //compose body email
+    let emailBody = "Hola, este es un correo automático.";
+    if (downloadedPdfPaths.length === 0) {
+        emailBody.concat(`
+        No se han encontrado BOIBs según los criterios de búsqueda siguientes:
+        `)
+    } else {
+        emailBody.concat() = `
+        Adjunto están los ${downloadedPdfPaths.length()} BOIBs que se han encontrado según los siguientes criterios de búsqueda siguientes:   
+            
+        - ${wordsToSearch}
+
+        `
+        if (numMatches === 0) {
+            emailBody.concat(`
+            De estos BOIBs no se ha podido encontrar ninguna coincidencia con los nombres de los clientes proporcionados:
+
+            - ${customers}
+
+            `); 
+        } else {
+            emailBody.concat(`
+            ¡¡¡OJO!!! Se han encontrado ${numMatches} coincidencias con los nombres de los clientes proporcionados:
+            
+            - ${customers}
+            
+            `);
+        }
+    }
+    emailBody.concat() = `
+        Que tengas un buend día.
+    `
     let attachments = downloadedPdfPaths.map(path => {
         return {
                 filename: path.split('/').pop(),
@@ -312,15 +356,26 @@ const sendEmailWithAttachments = () => {
     return transporter.sendMail(mailOptions);
 }
 
-const main = async () => {
+const wait = async (time) =>{
+    return new Promise((res, rej)=>{
+        setTimeout(()=> res(),time)
+    })
+}
 
+const main = async () => {
+    console.log('----------');
+    console.log(new Date(Date.now()));
     await readDataBase();
     await getLastBoib();
     if (lastBoibInfo.linkUltimoBoletin === previousBoibInfo.linkUltimoBoletin) {
         console.log("No hay nuevo BOIB");
         console.log(`${lastBoibInfo.ultimoBoletin}\n`);
         console.log('Saliendo...');
-        process.exit();
+        console.log('----------');
+        //wait x seconds before exitting
+        await wait(1000);
+        process.exit()
+    
     } else {
         console.log("Hay nuevo BOIB!!!!");
         console.log(lastBoibInfo.ultimoBoletin);
@@ -355,6 +410,8 @@ const main = async () => {
         await sendEmailWithAttachments();
         //here we could add an EAUTH error management
     }
+    console.log('----------');
+
 }
 
 main();    

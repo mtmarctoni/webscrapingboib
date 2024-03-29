@@ -10,28 +10,31 @@ const wordsToSearch = [
     "FOTOPAR",
     "Energia i Canvi Climàtic",
     "Transcició Energètica i Canvi CLimàtic",
-    "FEDER"
+    "FEDER",
+    "NextGenerationEU",
+    "NextGeneration",
+    "NEXTG",
+    "Pla de Recuperació, Transformació i Resiliència",
+    "PITEIB"
 ];
 
 //customers to look for
 const customers = [
     'GRIMALT ADROVER',
     'FLORES CAÑELLAS',
-    'CLAR ORELL'
+    'CLAR ORELL',
+    'MAS RÓDENAS', 'MAS RODENAS',
+    'NNECKE', //Stefan Könnecke
+    'GUASP RUBIO',
+    'RODRIGUEZ LOBO',
+
 ]
 
 //email constants
-const sendEmailBool = false;
+const sendEmailBool = true;
 const emailUser = process.env.OUTLOOK_USER
 const emailPassword = process.env.OUTLOOK_PASSWORD
-const emailBody = 
-`Hola, este es un correo automático.
-
-Adjunto estan los BOIBs encontrados según los siguientes criterios de búsqueda:
-
-- ${wordsToSearch}
-
-Que tengas un buend día.`
+//const emailBody
 let transporter = nodemailer.createTransport({
     service: 'Outlook365',
     auth: {
@@ -46,6 +49,7 @@ const lastBoibInfoFile = 'lastBoibInfo.json';
 let lastBoibInfo = {};
 let previousBoibInfo = {};
 let downloadedPdfPaths = [];
+let numMatches = 0;
 
 //export variables
 module.exports = {
@@ -56,11 +60,11 @@ module.exports = {
     sendEmailBool,
     emailUser,
     emailPassword,
-    emailBody,
     transporter,
     months,
     lastBoibInfoFile,
     lastBoibInfo,
     previousBoibInfo,
-    downloadedPdfPaths
+    downloadedPdfPaths,
+    numMatches
 }
