@@ -17,7 +17,7 @@ const {
     customers,
     sendEmailBool,
     emailUser,
-    emailBody,
+    emailRecipients,
     months,
     lastBoibInfoFile
 } = require('./modules/global')
@@ -306,27 +306,33 @@ const writeDataBase = () => {
 const sendEmailWithAttachments = () => {
     //console.log(downloadedPdfPaths);
     //compose body email
-    let emailBody = "Hola, este es un correo automático.";
+    let emailBody = `
+    Hola, este es un correo automático.
+    `;
     if (downloadedPdfPaths.length === 0) {
-        emailBody.concat(`
+        emailBody = emailBody.concat(`
+
         No se han encontrado BOIBs según los criterios de búsqueda siguientes:
+
+        - ${wordsToSearch}
+
         `)
     } else {
-        emailBody.concat() = `
+        emailBody = emailBody.concat(`
         Adjunto están los ${downloadedPdfPaths.length()} BOIBs que se han encontrado según los siguientes criterios de búsqueda siguientes:   
             
         - ${wordsToSearch}
 
-        `
+        `)
         if (numMatches === 0) {
-            emailBody.concat(`
+            emailBody = emailBody.concat(`
             De estos BOIBs no se ha podido encontrar ninguna coincidencia con los nombres de los clientes proporcionados:
 
             - ${customers}
 
             `); 
         } else {
-            emailBody.concat(`
+            emailBody = emailBody.concat(`
             ¡¡¡OJO!!! Se han encontrado ${numMatches} coincidencias con los nombres de los clientes proporcionados:
             
             - ${customers}
@@ -334,9 +340,12 @@ const sendEmailWithAttachments = () => {
             `);
         }
     }
-    emailBody.concat() = `
-        Que tengas un buend día.
-    `
+    emailBody = emailBody.concat(`
+    Que tengas un buend día.
+
+    Marc de DocsEE
+    Documentación Eficiente y Eficaz
+    `)
     let attachments = downloadedPdfPaths.map(path => {
         return {
                 filename: path.split('/').pop(),
@@ -347,12 +356,12 @@ const sendEmailWithAttachments = () => {
     //console.log(attachments);
     let mailOptions = {
         from: emailUser,
-        to: emailUser,
+        to: emailRecipients.join(', '),
         subject: `[NUEVO BOIB] ${lastBoibInfo.ultimoBoletin}`,
         text: emailBody,
         attachments: attachments
     };
-    console.log(`Enviando email a ${emailUser}`);
+    console.log(`Enviando email a ${emailRecipients.join(', ')}`);
     return transporter.sendMail(mailOptions);
 }
 

@@ -34,7 +34,10 @@ const customers = [
 const sendEmailBool = true;
 const emailUser = process.env.OUTLOOK_USER
 const emailPassword = process.env.OUTLOOK_PASSWORD
-//const emailBody
+const emailRecipients = [
+    emailUser,
+    process.env.OUTLOOK_RECIPIENT1
+]
 let transporter = nodemailer.createTransport({
     service: 'Outlook365',
     auth: {
@@ -60,6 +63,7 @@ module.exports = {
     sendEmailBool,
     emailUser,
     emailPassword,
+    emailRecipients,
     transporter,
     months,
     lastBoibInfoFile,
