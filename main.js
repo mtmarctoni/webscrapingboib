@@ -319,7 +319,7 @@ const sendEmailWithAttachments = () => {
         `)
     } else {
         emailBody = emailBody.concat(`
-        Adjunto están los ${downloadedPdfPaths.length()} BOIBs que se han encontrado según los siguientes criterios de búsqueda siguientes:   
+        Adjunto están los ${downloadedPdfPaths.length} BOIBs que se han encontrado según los siguientes criterios de búsqueda siguientes:   
             
         - ${wordsToSearch}
 
