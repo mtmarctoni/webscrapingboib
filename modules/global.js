@@ -7,27 +7,26 @@ const domainUrl = 'https://www.caib.es'
 const url = domainUrl.concat('/eboibfront/ca');
 //words to search in Boib descriptions
 const wordsToSearch = [
-    "FOTOPAR",
-    "Energia i Canvi Climàtic",
-    "Transcició Energètica i Canvi CLimàtic",
-    "FEDER",
-    "NextGenerationEU",
-    "NextGeneration",
-    "NEXTG",
-    "Pla de Recuperació, Transformació i Resiliència",
-    "PITEIB"
+    process.env.WORDTOSEARCH_1,
+    process.env.WORDTOSEARCH_2,
+    process.env.WORDTOSEARCH_3,
+    process.env.WORDTOSEARCH_4,
+    process.env.WORDTOSEARCH_5,
+    process.env.WORDTOSEARCH_6,
+    process.env.WORDTOSEARCH_7,
+    process.env.WORDTOSEARCH_8,
+    process.env.WORDTOSEARCH_9
 ];
 
 //customers to look for
 const customers = [
-    'GRIMALT ADROVER',
-    'FLORES CAÑELLAS',
-    'CLAR ORELL',
-    'MAS RÓDENAS', 'MAS RODENAS',
-    'NNECKE', //Stefan Könnecke
-    'GUASP RUBIO',
-    'RODRIGUEZ LOBO',
-
+    process.env.CUSTOMER_1,
+    process.env.CUSTOMER_2,
+    process.env.CUSTOMER_3,
+    process.env.CUSTOMER_4,
+    process.env.CUSTOMER_5,
+    process.env.CUSTOMER_6,
+    process.env.CUSTOMER_7
 ]
 
 //email constants
