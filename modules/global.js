@@ -1,5 +1,4 @@
 require('dotenv').config();
-const nodemailer = require('nodemailer');
 
 //Define constants
 // The URL of the BOIB website or the specific page you want to scrape
@@ -37,13 +36,6 @@ const emailRecipients = [
     emailUser,
     process.env.OUTLOOK_RECIPIENT1
 ]
-let transporter = nodemailer.createTransport({
-    service: 'Outlook365',
-    auth: {
-        user: emailUser,
-        pass: emailPassword
-    }
-});
 
 //auxiliary constants
 const months = ['gener', 'febrer', 'març', 'abril', 'maig', 'juny', 'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre'];
@@ -63,7 +55,6 @@ module.exports = {
     emailUser,
     emailPassword,
     emailRecipients,
-    transporter,
     months,
     lastBoibInfoFile,
     lastBoibInfo,
