@@ -9,11 +9,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@azure/identity": "^4.5.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.4.4",
     "download": "^8.0.0",
-    "nodemailer": "^6.9.9",
     "ora": "^4.1.1"
   }
 }

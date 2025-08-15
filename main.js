@@ -2,7 +2,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const sfs = require('fs');
-const util = require('util');
+//const util = require('util');
 const fs = require('fs').promises;
 //require("dotenv").config();
 const download = require('download');
@@ -22,24 +22,28 @@ const {
     lastBoibInfoFile
 } = require('./modules/global')
 
+const {
+    graphClient
+} = require('./modules/sendEmail')
+
 let {
-    transporter,
     lastBoibInfo,
     previousBoibInfo,
     downloadedPdfPaths,
     numMatches
-} = require('./modules/global')
+} = require('./modules/global');
 
-let logStream = sfs.createWriteStream('output.txt', {flags: 'a'});
 
 // Save old console.log in a variable
+/*
+let logStream = sfs.createWriteStream('output.txt', {flags: 'a'});
 let oldLog = console.log;
 
 console.log = function (message) {
   oldLog.apply(console, arguments);
   logStream.write(util.format(message) + '\n');
 };
-
+*/
 const resetInfo = () => {
     const newInfo = {
         ultimoBoletin: "",
@@ -287,27 +291,25 @@ const searchForCustomers = async (links) => {
         });
     
     }
-
-console.log(`Se han encontrado ${numMatches} coincidencias`);
-
+    
+    console.log(`Se han encontrado ${numMatches} coincidencias`);
+    
 }
 
 const writeDataBase = () => {
     console.log('Escribiendo datos obtenidos en la base de datos');
-
+    
     return new Promise(async (resolve, reject) => {
         await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo, null, 0));
         console.log('Datos guardados');
         resolve();
-        });
+    });
     
 }
 
-const sendEmailWithAttachments = () => {
-    //console.log(downloadedPdfPaths);
-    //compose body email
+const sendEmailMicrosoftGraph = async () => {
     let emailBody = `
-    Hola, este es un correo automático.
+        Hola, este es un correo automático.
     `;
     if (downloadedPdfPaths.length === 0) {
         emailBody = emailBody.concat(`
@@ -326,14 +328,14 @@ const sendEmailWithAttachments = () => {
         `)
         if (numMatches === 0) {
             emailBody = emailBody.concat(`
-            De estos BOIBs no se ha podido encontrar ninguna coincidencia con los nombres de los clientes proporcionados:
+        De estos BOIBs no se ha podido encontrar ninguna coincidencia con los nombres de los clientes proporcionados:
 
             - ${customers}
 
             `); 
         } else {
             emailBody = emailBody.concat(`
-            ¡¡¡OJO!!! Se han encontrado ${numMatches} coincidencias con los nombres de los clientes proporcionados:
+        ¡¡¡OJO!!! Se han encontrado ${numMatches} coincidencias con los nombres de los clientes proporcionados:
             
             - ${customers}
             
@@ -341,29 +343,52 @@ const sendEmailWithAttachments = () => {
         }
     }
     emailBody = emailBody.concat(`
-    Que tengas un buend día.
+        Que tengas un buend día.
 
-    Marc de DocsEE
-    Documentación Eficiente y Eficaz
+        Marc de DocsEE
+        Documentación Eficiente y Eficaz
     `)
-    let attachments = downloadedPdfPaths.map(path => {
+
+    let attachments = await Promise.all(downloadedPdfPaths.map(async (path) => {
+        const content = await fs.readFile(path);
+
         return {
-                filename: path.split('/').pop(),
-                path: path // Cambia esto por la ruta al archivo que quieres adjuntar
-            }
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            name: path.split('/').pop(),
+            contentType: "application/pdf",
+            //contentBytes: sfs.readFileSync(path, 'utf8').toString("base64"),
+            contentBytes:  content.toString("base64")
+        };
         
-    })
-    //console.log(attachments);
-    let mailOptions = {
-        from: emailUser,
-        to: emailRecipients.join(', '),
-        subject: `[NUEVO BOIB] ${lastBoibInfo.ultimoBoletin}`,
-        text: emailBody,
-        attachments: attachments
+    }));
+    
+    console.log('lista pdfs: ', downloadedPdfPaths);
+    
+    const email = {
+        message: {
+            subject: `[NUEVO BOIB] ${lastBoibInfo.ultimoBoletin}`,
+            body: {
+                contentType: "Text",
+                content: emailBody,
+            },
+            toRecipients: [
+                {
+                    emailAddress: {
+                        address: emailRecipients[1],
+                    },
+                },
+            ],
+            attachments: attachments
+        },
     };
-    console.log(`Enviando email a ${emailRecipients.join(', ')}`);
-    return transporter.sendMail(mailOptions);
-}
+    
+    try {
+        await graphClient.api(`/users/${emailUser}/sendMail`).post(email);
+        console.log("Email sent successfully!");
+    } catch (error) {
+        console.error("Error sending email:", error);
+    }
+}    
 
 const wait = async (time) =>{
     return new Promise((res, rej)=>{
@@ -416,11 +441,13 @@ const main = async () => {
     await writeDataBase();
     
     if (sendEmailBool) {
-        await sendEmailWithAttachments();
+        //await sendEmailWithAttachments();
+        await sendEmailMicrosoftGraph();
         //here we could add an EAUTH error management
     }
     console.log('----------');
-
+    
 }
 
-main();    
+
+main();
