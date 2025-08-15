@@ -1,16 +1,14 @@
 
-const axios = require('axios');
-const cheerio = require('cheerio');
-const sfs = require('fs');
-//const util = require('util');
-const fs = require('fs').promises;
-//require("dotenv").config();
-const download = require('download');
-const path = require("path");
-const ora = require('ora');
+import axios from 'axios';
+import { load } from 'cheerio';
+import { existsSync } from 'fs';
+import { promises as fs } from 'fs';
+import download from 'download';
+import { resolve as _resolve } from "path";
+import ora from 'ora';
 
 //import global variables
-const {
+import {
     domainUrl,
     url,
     wordsToSearch,
@@ -20,30 +18,16 @@ const {
     emailRecipients,
     months,
     lastBoibInfoFile
-} = require('./modules/global')
+} from './modules/global.js';
 
-const {
-    graphClient
-} = require('./modules/sendEmail')
-
-let {
+import {
     lastBoibInfo,
+    transporter,
     previousBoibInfo,
     downloadedPdfPaths,
     numMatches
-} = require('./modules/global');
+} from './modules/global.js';
 
-
-// Save old console.log in a variable
-/*
-let logStream = sfs.createWriteStream('output.txt', {flags: 'a'});
-let oldLog = console.log;
-
-console.log = function (message) {
-  oldLog.apply(console, arguments);
-  logStream.write(util.format(message) + '\n');
-};
-*/
 const resetInfo = () => {
     const newInfo = {
         ultimoBoletin: "",
@@ -64,7 +48,7 @@ const readDataBase = () => {
 
     return new Promise(async (resolve, reject) => {
  
-        if (!sfs.existsSync(lastBoibInfoFile)) {
+        if (!existsSync(lastBoibInfoFile)) {
             console.log('Archivo json no existe. Creando uno nuevo...');
             lastBoibInfo = resetInfo();
             await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo), 'utf8');
@@ -93,7 +77,7 @@ const readDataBase = () => {
 const getLastBoib = async () => {
     console.log('Cogiendo información del último BOIB');
     const res = await axios.get(url);
-    const $ = cheerio.load(res.data);
+    const $ = load(res.data);
     // Now use the cheerio selectors to find the data you want in the HTML
     // For example, if the data is in a div with the class 'myClass', you could do:
     const ultimoBoletin = $('div.ultimoBoletin div.caja.whitebg p a').text().replace(/\s+/g, ' ').trim();
@@ -123,13 +107,13 @@ const getSectionLinks = (link) => {
     return axios.get(link)
     .then(response => {
         const html = response.data;
-        const $ = cheerio.load(html);
+        const $ = load(html);
         //first know if Boib extraordinari and id anual number
         lastBoibInfo.isExtraordinary = $('a.fijo p').last().text().includes("Extraordinari");
         lastBoibInfo.isExtraordinary ? console.log("BOIB Extraordinari") : console.log("BOIB ordinari");
         
     
-        const $sectionMenuHtml = cheerio.load($('.primerosHijos').prop('outerHTML'));
+        const $sectionMenuHtml = load($('.primerosHijos').prop('outerHTML'));
         
         $sectionMenuHtml('li').each((i, elem) => {
             let link = domainUrl.concat($sectionMenuHtml(elem).find('a').attr('href'));
@@ -161,11 +145,11 @@ const getDocLists = (sectionLink) => {
     return axios.get(sectionLink)
     .then(response => {
         const html = response.data;
-        const $ = cheerio.load(html);
+        const $ = load(html);
         const llistatElement = $('.llistat');
 
         if (llistatElement.length) {
-            const $docList = cheerio.load(llistatElement.prop('outerHTML'));
+            const $docList = load(llistatElement.prop('outerHTML'));
             // Continúa con tu código aquí...
             $docList('ul.resolucions').each((j, elems) => {
                 let docListObject = {
@@ -187,7 +171,7 @@ const getDocLists = (sectionLink) => {
                     docListObject.downloadPdfLink = domainUrl + link;
                     docListObject.description = description;
                     docListObject.id = id;
-                } else if (link.includes('intranet.caib.es') && !(link.endsWith('rdf'))) {
+                } else if (!(link.endsWith('xml')) && !(link.endsWith('rdf'))) {
                     docListObject.htmlLink = link;
     
                 } else {
@@ -238,7 +222,7 @@ const downloadPdfs = async (links) => {
     //console.log(links);
     let date = lastBoibInfo.dateLastBoib;
     const folderName = `${lastBoibInfo.idAnualBoib}_${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}`;
-    const folderPath = path.resolve(__dirname, 'BOIBpdfs', folderName) + "/";
+    const folderPath = _resolve(__dirname, 'BOIBpdfs', folderName) + "/";
     const spinner = ora(`Los pdfs se descargan en:\n${folderPath}`).start()
     for (let link of links) {
         await download(link, folderPath);  
@@ -266,7 +250,7 @@ const searchForCustomers = async (links) => {
         })
         //console.log('ID: ' + id);
         const res = await axios.get(link)
-        const $ = cheerio.load(res.data);
+        const $ = load(res.data);
         const tables = $('table')
         //let section = $('#boibDetall').text()
         tables.each((i, table) => {
@@ -307,9 +291,11 @@ const writeDataBase = () => {
     
 }
 
-const sendEmailMicrosoftGraph = async () => {
+const sendEmailWithAttachments = () => {
+    //console.log(downloadedPdfPaths);
+    //compose body email
     let emailBody = `
-        Hola, este es un correo automático.
+    Hola, este es un correo automático.
     `;
     if (downloadedPdfPaths.length === 0) {
         emailBody = emailBody.concat(`
@@ -328,14 +314,14 @@ const sendEmailMicrosoftGraph = async () => {
         `)
         if (numMatches === 0) {
             emailBody = emailBody.concat(`
-        De estos BOIBs no se ha podido encontrar ninguna coincidencia con los nombres de los clientes proporcionados:
+            De estos BOIBs no se ha podido encontrar ninguna coincidencia con los nombres de los clientes proporcionados:
 
             - ${customers}
 
             `); 
         } else {
             emailBody = emailBody.concat(`
-        ¡¡¡OJO!!! Se han encontrado ${numMatches} coincidencias con los nombres de los clientes proporcionados:
+            ¡¡¡OJO!!! Se han encontrado ${numMatches} coincidencias con los nombres de los clientes proporcionados:
             
             - ${customers}
             
@@ -343,52 +329,29 @@ const sendEmailMicrosoftGraph = async () => {
         }
     }
     emailBody = emailBody.concat(`
-        Que tengas un buend día.
+    Que tengas un buend día.
 
-        Marc de DocsEE
-        Documentación Eficiente y Eficaz
+    Marc de DocsEE
+    Documentación Eficiente y Eficaz
     `)
-
-    let attachments = await Promise.all(downloadedPdfPaths.map(async (path) => {
-        const content = await fs.readFile(path);
-
+    let attachments = downloadedPdfPaths.map(path => {
         return {
-            "@odata.type": "#microsoft.graph.fileAttachment",
-            name: path.split('/').pop(),
-            contentType: "application/pdf",
-            //contentBytes: sfs.readFileSync(path, 'utf8').toString("base64"),
-            contentBytes:  content.toString("base64")
-        };
+                filename: path.split('/').pop(),
+                path: path // Cambia esto por la ruta al archivo que quieres adjuntar
+            }
         
-    }));
-    
-    console.log('lista pdfs: ', downloadedPdfPaths);
-    
-    const email = {
-        message: {
-            subject: `[NUEVO BOIB] ${lastBoibInfo.ultimoBoletin}`,
-            body: {
-                contentType: "Text",
-                content: emailBody,
-            },
-            toRecipients: [
-                {
-                    emailAddress: {
-                        address: emailRecipients[1],
-                    },
-                },
-            ],
-            attachments: attachments
-        },
+    })
+    //console.log(attachments);
+    let mailOptions = {
+        from: emailUser,
+        to: emailRecipients.join(', '),
+        subject: `[NUEVO BOIB] ${lastBoibInfo.ultimoBoletin}`,
+        text: emailBody,
+        attachments: attachments
     };
-    
-    try {
-        await graphClient.api(`/users/${emailUser}/sendMail`).post(email);
-        console.log("Email sent successfully!");
-    } catch (error) {
-        console.error("Error sending email:", error);
-    }
-}    
+    console.log(`Enviando email a ${emailRecipients.join(', ')}`);
+    return transporter.sendMail(mailOptions);
+}   
 
 const wait = async (time) =>{
     return new Promise((res, rej)=>{
@@ -441,8 +404,7 @@ const main = async () => {
     await writeDataBase();
     
     if (sendEmailBool) {
-        //await sendEmailWithAttachments();
-        await sendEmailMicrosoftGraph();
+        await sendEmailWithAttachments();
         //here we could add an EAUTH error management
     }
     console.log('----------');
