@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import fs from "fs/promises";
 import sfs from "fs";
 import * as cheerio from "cheerio";
@@ -44,7 +44,39 @@ export const readDataBase = async (lastBoibInfoFile: string): Promise<void> => {
 
 export const getLastBoib = async (): Promise<void> => {
   console.log("Cogiendo información del último BOIB");
-  const res = await axios.get(url);
+  const maxRetries = 3;
+  let attempt = 0;
+  let success = false;
+  let res: AxiosResponse<any, any>;
+  while (attempt < maxRetries && !success) {
+    try {
+      res = await axios.get(url, { timeout: 10000 });
+      success = true;
+    } catch (err: any) {
+      attempt++;
+      if (attempt < maxRetries) {
+        console.warn(`Intento ${attempt} fallido. Reintentando...`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } else {
+        console.error(
+          "No se pudo obtener el último BOIB tras varios intentos."
+        );
+        if (
+          err.code === "ECONNRESET" ||
+          err.code === "ETIMEDOUT" ||
+          err.code === "ENOTFOUND"
+        ) {
+          console.error(
+            `Error de red: ${err.code}. Puede que el servidor esté caído o haya problemas de conexión.`
+          );
+        } else {
+          console.error("Error desconocido:", err.message);
+        }
+        console.log("Saliendo...");
+        process.exit(1);
+      }
+    }
+  }
   const $ = cheerio.load(res.data) as CheerioAPI;
   const ultimoBoletin = $("div.ultimoBoletin div.caja.whitebg p a")
     .text()
