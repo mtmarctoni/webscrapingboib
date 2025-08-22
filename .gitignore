@@ -1,5 +1,6 @@
 #environment config files
 .env
+!.env.template
 
 #dependencies directories
 node_modules/
