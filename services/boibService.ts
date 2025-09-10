@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from "axios";
+import https from "https";
 import fs from "fs/promises";
 import sfs from "fs";
 import * as cheerio from "cheerio";
@@ -142,7 +143,15 @@ export const getDocLists = async (sectionLink: string): Promise<void> => {
     console.error("No se encontro la sección");
     return;
   }
-  const response = await axios.get(sectionLink);
+  const requestOptions = {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+    },
+    timeout: 10000,
+    httpsAgent: new https.Agent({ keepAlive: true }),
+  };
+  const response = await axios.get(sectionLink, requestOptions);
   const html = response.data;
   const $ = cheerio.load(html) as CheerioAPI;
   const llistatElement = $(".llistat");
