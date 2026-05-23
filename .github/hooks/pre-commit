@@ -37,7 +37,7 @@ done
 # --- Run TypeScript type check ---
 if [ -n "$STAGED_TS_FILES" ]; then
   echo "Running TypeScript type check..."
-  if ! pnpm exec tsc --noEmit; then
+  if ! npx tsc --noEmit; then
     echo ""
     echo "ERROR: TypeScript type check failed."
     echo "Fix the errors before committing or use 'git commit --no-verify' to bypass."

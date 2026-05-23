@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "Node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -11,5 +11,5 @@
     "outDir": "./dist",
     "resolveJsonModule": true
   },
-  "include": ["./modules/**/*.ts", "./services/**/*.ts", "./types/**/*.ts", "./main.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "types/**/*.d.ts"]
 }
