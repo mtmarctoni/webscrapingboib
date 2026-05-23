@@ -16,6 +16,7 @@ function sanitizeForEmail(text: string): string {
 
 export const sendEmailWithAttachments = async (): Promise<void> => {
   let emailBody = `\nAuto-generated notification.\n`;
+  const safeNumMatches = typeof numMatches === "number" ? numMatches : 0;
 
   if (downloadedPdfPaths.length === 0) {
     emailBody += `\n\nNo BOIBs found matching the following search criteria:\n\n`;
@@ -29,14 +30,14 @@ export const sendEmailWithAttachments = async (): Promise<void> => {
     }
     emailBody += `\n`;
 
-    if (numMatches === 0) {
+    if (safeNumMatches === 0) {
       emailBody += `No matches found with the provided customer names:\n\n`;
       for (const customer of customers) {
         emailBody += `  - ${sanitizeForEmail(customer)}\n`;
       }
       emailBody += `\n`;
     } else {
-      emailBody += `*** ALERT *** ${numMatches} match(es) found with the provided customer names:\n\n`;
+      emailBody += `*** ALERT *** ${safeNumMatches} match(es) found with the provided customer names:\n\n`;
       for (const customer of customers) {
         emailBody += `  - ${sanitizeForEmail(customer)}\n`;
       }
