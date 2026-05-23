@@ -26,4 +26,4 @@ output.txt
 *.cert
 *.p12
 credentials.json
-service-account*.json
+service-account*.jsonpnpm-workspace.yaml

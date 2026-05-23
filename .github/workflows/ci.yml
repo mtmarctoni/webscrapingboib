@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+  audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Run security audit
+        run: pnpm audit
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Build
+        run: pnpm exec tsc
+
+      - name: Ensure no .env in repo
+        run: |
+          if find . -name ".env" -not -path "*/node_modules/*" -not -path "*/.git/*" | grep -q .; then
+            echo "ERROR: .env file found in repository. Remove it immediately."
+            exit 1
+          fi
+
+  file-guard:
+    name: Secret File Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for committed secrets
+        run: |
+          # Block common secret filenames
+          BLOCKED="\\.env$ \\.env\\.local$ \\.env\\.production$ \\.env\\.development$
+          id_rsa id_rsa\\.pub id_dsa id_dsa\\.pub
+          \\.pem$ \\.key$ \\.p12$ \\.pfx$
+          credentials\\.json service-account.*\\.json
+          token\\.json secret\\.json"
+
+          FOUND=0
+          for pattern in $BLOCKED; do
+            if find . -not -path "*/node_modules/*" -not -path "*/.git/*" | grep -E "$pattern" | grep -v "\\.env\\.template$"; then
+              echo "ERROR: Blocked file pattern matched: $pattern"
+              FOUND=1
+            fi
+          done
+
+          if [ "$FOUND" -eq 1 ]; then
+            exit 1
+          fi
+
+          echo "No secret files found in repository."
