@@ -28,16 +28,16 @@ export const searchForCustomers = async (links: string[]): Promise<void> => {
       });
       const $ = cheerio.load(res.data);
       const tables = $("table");
-      tables.each((_i, table) => {
+      tables.each((tableIdx, table) => {
         const rows = $(table).find("tr");
-        rows.each((_j, row) => {
+        rows.each((rowIdx, row) => {
           const cells = $(row).find("td");
-          cells.each((_k, cell) => {
+          cells.each((cellIdx, cell) => {
             const cellText = $(cell).text();
             for (const customer of customers) {
               if (cellText.toLowerCase().includes(customer.toLowerCase())) {
                 localNumMatches++;
-                const match = `PDF ${docObj?.id ?? ""} -> Table, row, cell: ${cellText.trim()}`;
+                const match = `PDF ${docObj?.id ?? ""} -> Table ${tableIdx + 1}, row ${rowIdx + 1}, cell ${cellIdx + 1}: ${cellText.trim()}`;
                 lastBoibInfo.customersMatched.push(match);
                 console.log(`Match found: ${match}`);
               }
