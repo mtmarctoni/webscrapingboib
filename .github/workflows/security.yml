@@ -23,6 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch all branches
+        run: |
+          git fetch origin --tags
+          git branch main origin/main 2>/dev/null || true
+
       - name: TruffleHog OSS
         uses: trufflesecurity/trufflehog@main
         with:
