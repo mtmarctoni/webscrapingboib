@@ -161,10 +161,12 @@ export const HTTP_TIMEOUT = 15000;
 export const MAX_CONTENT_LENGTH = 10 * 1024 * 1024;
 
 export function isAllowedUrl(link: string): boolean {
+  const normalizedLink = link.trim();
+
   try {
-    const parsed = new URL(link);
+    const parsed = new URL(normalizedLink);
     return parsed.origin === new URL(ALLOWED_DOMAIN).origin;
   } catch {
-    return link.startsWith(ALLOWED_DOMAIN) || link.startsWith("/");
+    return normalizedLink.startsWith("/");
   }
 }
