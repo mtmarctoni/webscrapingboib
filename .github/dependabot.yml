@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "mtmarctoni"
+    labels:
+      - "dependencies"
+      - "security"
+    groups:
+      security-patches:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        labels:
+          - "security"
+          - "dependencies"
+      minor-updates:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "typescript"
+          - "axios"

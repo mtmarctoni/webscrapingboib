@@ -1,0 +1,50 @@
+#!/bin/sh
+# Pre-commit hook for webscrapingboib
+# Blocks commits of .env files and runs typecheck on staged files
+
+set -e
+
+STAGED_TS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.ts$' || true)
+STAGED_ALL=$(git diff --cached --name-only --diff-filter=ACM)
+
+# --- Block .env files ---
+for file in $STAGED_ALL; do
+  basename=$(basename "$file")
+  if echo "$basename" | grep -qE '^\.env(\.local|\.production|\.development)?$'; then
+    echo ""
+    echo "ERROR: Attempting to commit environment file: $file"
+    echo "Environment files contain secrets and must not be committed."
+    echo "If this is intentional, use 'git commit --no-verify' to bypass."
+    echo ""
+    exit 1
+  fi
+done
+
+# --- Block common secret filenames ---
+for file in $STAGED_ALL; do
+  basename=$(basename "$file")
+  case "$basename" in
+    id_rsa|id_rsa.pub|id_dsa|id_dsa.pub|*.pem|*.key|*.p12|*.pfx|credentials.json|token.json|secret.json)
+      echo ""
+      echo "ERROR: Attempting to commit potential secret file: $file"
+      echo "If this is intentional, use 'git commit --no-verify' to bypass."
+      echo ""
+      exit 1
+      ;;
+  esac
+done
+
+# --- Run TypeScript type check ---
+if [ -n "$STAGED_TS_FILES" ]; then
+  echo "Running TypeScript type check..."
+  if ! pnpm exec tsc --noEmit; then
+    echo ""
+    echo "ERROR: TypeScript type check failed."
+    echo "Fix the errors before committing or use 'git commit --no-verify' to bypass."
+    echo ""
+    exit 1
+  fi
+  echo "Type check passed."
+fi
+
+echo "Pre-commit checks passed."

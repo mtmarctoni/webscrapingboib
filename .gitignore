@@ -1,21 +1,30 @@
-#environment config files
+# environment config files
 .env
 !.env.template
 
-#dependencies directories
+# dependencies directories
 node_modules/
 
-#log files
+# log files
 *.log
 
-#build and distribution files
+# build and distribution files
 dist/
 build/
 
-#output files
+# output files
 BOIBpdfs/
 lastBoibInfo.json
 output.txt
 
-#executables
+# executables
 *.bat
+
+# security: never commit secrets
+*.pem
+*.key
+*.cert
+*.p12
+credentials.json
+service-account*.json
+pnpm-workspace.yaml

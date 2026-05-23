@@ -5,9 +5,11 @@
     "moduleResolution": "Node",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "resolveJsonModule": true
   },
-  "include": ["./modules/**/*.ts", "./main.ts"]
+  "include": ["./modules/**/*.ts", "./services/**/*.ts", "./types/**/*.ts", "./main.ts"]
 }

@@ -8,66 +8,58 @@ import {
   customers,
   transporter,
 } from "../modules/global.js";
+import type { Attachment } from "nodemailer";
 
-interface Attachment {
-  filename: string | undefined;
-  path: string;
-}
-
-interface MailOptions {
-  from: string;
-  to: string;
-  subject: string;
-  text: string;
-  attachments: Attachment[];
+function sanitizeForEmail(text: string): string {
+  return text.replace(/[\r\n]/g, " ").trim();
 }
 
 export const sendEmailWithAttachments = async (): Promise<void> => {
-  let emailBody = `\n
-    Hola, este es un correo automático.\n
-    `;
+  let emailBody = `\nAuto-generated notification.\n`;
+  const safeNumMatches = typeof numMatches === "number" ? numMatches : 0;
+
   if (downloadedPdfPaths.length === 0) {
-    emailBody = emailBody.concat(`\n\n
-        No se han encontrado BOIBs según los criterios de búsqueda siguientes:\n\n
-        - ${wordsToSearch}\n\n        `);
+    emailBody += `\n\nNo BOIBs found matching the following search criteria:\n\n`;
+    for (const word of wordsToSearch) {
+      emailBody += `  - ${sanitizeForEmail(word)}\n`;
+    }
   } else {
-    emailBody = emailBody.concat(`\n
-        Adjunto están los ${downloadedPdfPaths.length} BOIBs que se han encontrado según los siguientes criterios de búsqueda siguientes:
-        \n\n
-            - ${wordsToSearch}
-        \n\n
-        `);
-    if (numMatches === 0) {
-      emailBody = emailBody.concat(`\n
-        De estos BOIBs no se ha podido encontrar ninguna coincidencia con los nombres de los clientes proporcionados:
-        \n\n
-        - ${customers}
-        \n\n            `);
+    emailBody += `\nAttached are the ${downloadedPdfPaths.length} BOIB(s) found matching the following search criteria:\n\n`;
+    for (const word of wordsToSearch) {
+      emailBody += `  - ${sanitizeForEmail(word)}\n`;
+    }
+    emailBody += `\n`;
+
+    if (safeNumMatches === 0) {
+      emailBody += `No matches found with the provided customer names:\n\n`;
+      for (const customer of customers) {
+        emailBody += `  - ${sanitizeForEmail(customer)}\n`;
+      }
+      emailBody += `\n`;
     } else {
-      emailBody = emailBody.concat(`\n
-        ¡¡¡OJO!!! Se han encontrado ${numMatches} coincidencias con los nombres de los clientes proporcionados:
-        \n\n
-        - ${customers}
-        \n\n
-        `);
+      emailBody += `*** ALERT *** ${safeNumMatches} match(es) found with the provided customer names:\n\n`;
+      for (const customer of customers) {
+        emailBody += `  - ${sanitizeForEmail(customer)}\n`;
+      }
+      emailBody += `\n`;
     }
   }
-  emailBody = emailBody.concat(`\n
-    Que tengas un buend día.\n\n
-    Marc de DocsEE\n
-    Documentación Eficiente y Eficaz\n
-    `);
-  const attachments: Attachment[] = downloadedPdfPaths.map((path: string) => ({
-    filename: path.split("/").pop(),
-    path,
+
+  emailBody += `\nHave a good day.\n\nMarc de DocsEE\nDocumentacion Eficiente y Eficaz\n`;
+
+  const attachments: Attachment[] = downloadedPdfPaths.map((filePath: string) => ({
+    filename: filePath.split("/").pop() || `attachment_${Date.now()}.pdf`,
+    path: filePath,
   }));
-  const mailOptions: MailOptions = {
+
+  const mailOptions = {
     from: emailUser,
     to: emailRecipients.join(", "),
-    subject: `[NUEVO BOIB] ${lastBoibInfo.ultimoBoletin}`,
+    subject: `[NUEVO BOIB] ${sanitizeForEmail(lastBoibInfo.ultimoBoletin)}`,
     text: emailBody,
     attachments,
   };
-  console.log(`Enviando email a ${emailRecipients.join(", ")}`);
+
+  console.log(`Sending email to ${emailRecipients.join(", ")}`);
   await transporter.sendMail(mailOptions);
 };

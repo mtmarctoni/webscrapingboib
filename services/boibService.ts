@@ -1,101 +1,115 @@
 import axios, { AxiosResponse } from "axios";
 import https from "https";
 import fs from "fs/promises";
-import sfs from "fs";
 import * as cheerio from "cheerio";
-import { CheerioAPI } from "cheerio";
 import {
   domainUrl,
   url,
   months,
   lastBoibInfo,
   previousBoibInfo,
+  HTTP_TIMEOUT,
+  MAX_CONTENT_LENGTH,
+  isAllowedUrl,
 } from "../modules/global.js";
+import type { BoibInfo, SectionLink, DocListItem } from "../types/boibInfo.js";
 
-export const resetInfo = (): any => ({
+class BoibError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BoibError";
+  }
+}
+
+export const resetInfo = (): BoibInfo => ({
   ultimoBoletin: "",
   isExtraordinary: false,
-  idBoib: 0,
-  idAnualBoib: 0,
+  idBoib: "",
+  idAnualBoib: "",
   dateLastBoib: "",
   linkUltimoBoletin: "",
   customersMatched: [],
   sectionLinks: [],
+  numMatches: 0,
 });
 
+const SECURE_AXIOS_OPTIONS = {
+  timeout: HTTP_TIMEOUT,
+  maxContentLength: MAX_CONTENT_LENGTH,
+  maxBodyLength: MAX_CONTENT_LENGTH,
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+  },
+  httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: true }),
+};
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries: number = 3, delayMs: number = 2000): Promise<T> {
+  let lastError: Error | undefined;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < maxRetries) {
+        console.warn(`Attempt ${attempt} failed. Retrying in ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+  throw new BoibError(`Failed after ${maxRetries} retries: ${lastError?.message ?? "unknown error"}`);
+}
+
 export const readDataBase = async (lastBoibInfoFile: string): Promise<void> => {
-  if (!sfs.existsSync(lastBoibInfoFile)) {
-    console.log("Archivo json no existe. Creando uno nuevo...");
-    Object.assign(lastBoibInfo, resetInfo());
-    await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo), "utf8");
-    console.log(`Archivo ${lastBoibInfoFile} creado.`);
-  } else {
+  try {
     const res = await fs.readFile(lastBoibInfoFile, "utf8");
     if (!res) {
-      console.log("Archivo json vacío.");
+      console.log("JSON file is empty.");
       Object.assign(lastBoibInfo, resetInfo());
     } else {
       const data = JSON.parse(res);
       Object.assign(previousBoibInfo, data);
       Object.assign(lastBoibInfo, resetInfo());
-      console.log("Datos obtenidos de la base de datos");
+      console.log("Data loaded from database");
+    }
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      console.log("JSON file does not exist. Creating a new one...");
+      Object.assign(lastBoibInfo, resetInfo());
+      await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo, null, 2), "utf8");
+      console.log(`File ${lastBoibInfoFile} created.`);
+    } else {
+      throw err;
     }
   }
 };
 
 export const getLastBoib = async (): Promise<void> => {
-  console.log("Cogiendo información del último BOIB");
-  const maxRetries = 3;
-  let attempt = 0;
-  let success = false;
-  let res: AxiosResponse<any, any>;
-  while (attempt < maxRetries && !success) {
-    try {
-      res = await axios.get(url, { timeout: 10000 });
-      success = true;
-    } catch (err: any) {
-      attempt++;
-      if (attempt < maxRetries) {
-        console.warn(`Intento ${attempt} fallido. Reintentando...`);
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      } else {
-        console.error(
-          "No se pudo obtener el último BOIB tras varios intentos."
-        );
-        if (
-          err.code === "ECONNRESET" ||
-          err.code === "ETIMEDOUT" ||
-          err.code === "ENOTFOUND"
-        ) {
-          console.error(
-            `Error de red: ${err.code}. Puede que el servidor esté caído o haya problemas de conexión.`
-          );
-        } else {
-          console.error("Error desconocido:", err.message);
-        }
-        console.log("Saliendo...");
-        process.exit(1);
-      }
-    }
-  }
-  const $ = cheerio.load(res.data) as CheerioAPI;
+  console.log("Fetching latest BOIB info");
+  const res: AxiosResponse = await withRetry(async () => axios.get(url, SECURE_AXIOS_OPTIONS));
+  const $ = cheerio.load(res.data);
   const ultimoBoletin = $("div.ultimoBoletin div.caja.whitebg p a")
     .text()
     .replace(/\s+/g, " ")
     .trim();
-  const subLinkUltimoBoletin = $("div.ultimoBoletin div.caja.whitebg p a").attr(
-    "href"
-  );
-  const anoUltimoBoletin = ultimoBoletin.match(/(\d{4})$/)?.[0] || "";
-  const idUltimoBoletin =
-    subLinkUltimoBoletin?.split("/")?.reverse()?.[1] || "";
+  const subLinkUltimoBoletin = $("div.ultimoBoletin div.caja.whitebg p a").attr("href");
+  if (!subLinkUltimoBoletin) {
+    throw new BoibError("Could not find bulletin link on the BOIB page");
+  }
+  const anoUltimoBoletin = ultimoBoletin.match(/(\d{4})$/)?.[0] ?? "";
+  const idUltimoBoletin = subLinkUltimoBoletin.split("/").reverse()[1] ?? "";
   const wordsLastBoib = ultimoBoletin.split(" ");
-  const idAnualBoib = wordsLastBoib[6];
-  let monthNumber: string | number = months.indexOf(wordsLastBoib[9]) + 1;
-  monthNumber = monthNumber < 10 ? "0" + monthNumber : monthNumber;
-  const stringDatelastBoib =
-    wordsLastBoib[11] + "-" + monthNumber + "-" + wordsLastBoib[7];
-  const dateLastBoib = String(new Date(stringDatelastBoib));
+  const idAnualBoib = wordsLastBoib[6] ?? "";
+  const monthName = wordsLastBoib[9] ?? "";
+  let monthNumber: number = months.indexOf(monthName) + 1;
+  if (monthNumber === 0) {
+    console.warn(`Could not parse month "${monthName}" from bulletin text, defaulting to 01`);
+    monthNumber = 1;
+  }
+  const monthStr = monthNumber < 10 ? "0" + monthNumber : String(monthNumber);
+  const dayStr = wordsLastBoib[7] ?? "01";
+  const stringDatelastBoib = `${wordsLastBoib[11] ?? ""}-${monthStr}-${dayStr}`;
+  const dateLastBoib = new Date(stringDatelastBoib).toString();
   lastBoibInfo.ultimoBoletin = ultimoBoletin;
   lastBoibInfo.idBoib = idUltimoBoletin;
   lastBoibInfo.idAnualBoib = idAnualBoib;
@@ -104,10 +118,12 @@ export const getLastBoib = async (): Promise<void> => {
 };
 
 export const getSectionLinks = async (link: string): Promise<void> => {
+  if (!isAllowedUrl(link)) {
+    throw new BoibError(`Blocked disallowed URL: ${link}`);
+  }
   try {
-    const response = await axios.get(link);
-    const html = response.data;
-    const $ = cheerio.load(html) as CheerioAPI;
+    const response = await axios.get(link, SECURE_AXIOS_OPTIONS);
+    const $ = cheerio.load(response.data);
     lastBoibInfo.isExtraordinary = $("a.fijo p")
       .last()
       .text()
@@ -115,52 +131,38 @@ export const getSectionLinks = async (link: string): Promise<void> => {
     lastBoibInfo.isExtraordinary
       ? console.log("BOIB Extraordinari")
       : console.log("BOIB ordinari");
-    const $sectionMenuHtml = cheerio.load(
-      $(".primerosHijos").prop("outerHTML")
-    ) as CheerioAPI;
-    $sectionMenuHtml("li").each((i: number, elem: any) => {
-      let link_1 = domainUrl.concat(
-        $sectionMenuHtml(elem).find("a").attr("href")
-      );
-      let sectionObject: any = {
+    const $sectionMenuHtml = cheerio.load($(".primerosHijos").prop("outerHTML") ?? "<div></div>");
+    $sectionMenuHtml("li").each((i, elem) => {
+      const href = $sectionMenuHtml(elem).find("a").attr("href") ?? "";
+      const link_1 = domainUrl.concat(href);
+      const sectionObject: SectionLink = {
         id: i,
-        titulo: link_1.split("/").reverse()[1].replace(/-/g, " "),
+        titulo: link_1.split("/").reverse()[1]?.replace(/-/g, " ") ?? "",
         link: link_1,
         docList: [],
       };
       lastBoibInfo.sectionLinks.push(sectionObject);
     });
-  } catch (message_1: any) {
-    return console.error(message_1);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new BoibError(`Error fetching section links: ${message}`);
   }
 };
 
 export const getDocLists = async (sectionLink: string): Promise<void> => {
-  let sectionObject = lastBoibInfo.sectionLinks.filter(
-    (obj: any) => obj.link === sectionLink
-  )[0];
+  const sectionObject = lastBoibInfo.sectionLinks.find(
+    (obj: SectionLink) => obj.link === sectionLink
+  );
   if (!sectionObject) {
-    console.error("No se encontro la sección");
-    return;
+    throw new BoibError(`Section not found for link: ${sectionLink}`);
   }
-  const requestOptions = {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-    },
-    timeout: 10000,
-    httpsAgent: new https.Agent({ keepAlive: true }),
-  };
-  const response = await axios.get(sectionLink, requestOptions);
-  const html = response.data;
-  const $ = cheerio.load(html) as CheerioAPI;
+  const response = await axios.get(sectionLink, SECURE_AXIOS_OPTIONS);
+  const $ = cheerio.load(response.data);
   const llistatElement = $(".llistat");
   if (llistatElement.length) {
-    const $docList = cheerio.load(
-      llistatElement.prop("outerHTML")
-    ) as CheerioAPI;
-    $docList("ul.resolucions").each((j: number, elems: any) => {
-      let docListObject: any = {
+    const $docList = cheerio.load(llistatElement.prop("outerHTML") ?? "<div></div>");
+    $docList("ul.resolucions").each((_j, elems) => {
+      const docListObject: DocListItem = {
         id: "",
         htmlLink: "",
         description: "",
@@ -168,30 +170,39 @@ export const getDocLists = async (sectionLink: string): Promise<void> => {
       };
       $docList(elems)
         .find("a")
-        .each((i: number, elem: any) => {
-          let link = $docList(elem).attr("href");
+        .each((_i, elem) => {
+          const link = $docList(elem).attr("href") ?? "";
           if (link.startsWith("/eboibfront/pdf/")) {
-            let description = $docList(elem)
+            const description = $docList(elem)
               .parents("ul.resolucions")
               .first()
               .find("p")
               .first()
               .text();
-            let idText = $docList(elem)
+            const idText = $docList(elem)
               .parents("ul.resolucions")
               .first()
               .find("p.registre")
               .first()
               .text()
               .trim();
-            let id = idText.split("-")[0].split(" ").reverse()[1];
-            docListObject.downloadPdfLink = domainUrl + link;
+            const id = idText.split("-")[0]?.split(" ").reverse()[1] ?? "";
+            const fullLink = domainUrl + link;
+            if (isAllowedUrl(fullLink)) {
+              docListObject.downloadPdfLink = fullLink;
+            } else {
+              console.warn(`Skipping disallowed PDF URL: ${fullLink}`);
+            }
             docListObject.description = description;
             docListObject.id = id;
           } else if (!link.endsWith("xml") && !link.endsWith("rdf")) {
-            docListObject.htmlLink = link;
+            if (isAllowedUrl(link) || link.startsWith("/")) {
+              docListObject.htmlLink = link.startsWith("/") ? domainUrl + link : link;
+            } else {
+              console.warn(`Skipping disallowed HTML URL: ${link}`);
+            }
           } else {
-            lastBoibInfo.sectionLinks[sectionObject.id].docList.push(
+            lastBoibInfo.sectionLinks[sectionObject.id]!.docList.push(
               docListObject
             );
           }
@@ -199,26 +210,25 @@ export const getDocLists = async (sectionLink: string): Promise<void> => {
     });
   } else {
     console.log(
-      "No se ha encontrado el elemento con la clase 'llistat'. en " +
-        sectionLink
+      `Element with class 'llistat' not found at ${sectionLink}`
     );
   }
 };
 
-export const getSpecificBoib = (wordsToSearch: string[]): any[] => {
-  console.log(`\nBuscando documentos que contengan:\n${wordsToSearch}\n`);
-  let filteredList = lastBoibInfo.sectionLinks.flatMap((section: any) => {
-    return section.docList.filter((doc: any) => {
+export const getSpecificBoib = (wordsToSearch: string[]): DocListItem[] => {
+  console.log(`\nSearching for documents containing:\n${wordsToSearch}\n`);
+  const filteredList = lastBoibInfo.sectionLinks.flatMap((section: SectionLink) => {
+    return section.docList.filter((doc: DocListItem) => {
       return wordsToSearch.some((word: string) =>
-        doc.description.includes(word)
+        doc.description.toLowerCase().includes(word.toLowerCase())
       );
     });
   });
-  if (filteredList.length == 0) {
-    console.log("No hay documentos con estos criterios de búsqueda\n");
+  if (filteredList.length === 0) {
+    console.log("No documents found matching these search criteria\n");
     return [];
   } else {
-    console.log(`${filteredList.length} BOIBs encontrados`);
+    console.log(`${filteredList.length} BOIBs found`);
     return filteredList;
   }
 };
