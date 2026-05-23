@@ -1,8 +1,5 @@
-import fs from 'fs/promises';
-import {
-    lastBoibInfoFile,
-    lastBoibInfo
-} from '../modules/global.js';
+import fs from "fs/promises";
+import { lastBoibInfoFile, lastBoibInfo } from "../modules/global.js";
 
 export const wait = async (time: number): Promise<void> => {
   return new Promise((resolve) => {
@@ -11,7 +8,7 @@ export const wait = async (time: number): Promise<void> => {
 };
 
 export const writeDataBase = async (): Promise<void> => {
-  console.log('Escribiendo datos obtenidos en la base de datos');
-  await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo, null, 0));
-  console.log('Datos guardados');
-}
+  console.log("Writing data to database");
+  await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo, null, 2));
+  console.log("Data saved");
+};

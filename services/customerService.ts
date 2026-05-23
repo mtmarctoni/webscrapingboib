@@ -1,42 +1,55 @@
-import axios from 'axios';
-import * as cheerio from 'cheerio';
-import { CheerioAPI } from 'cheerio';
-import { customers, lastBoibInfo } from '../modules/global.js';
-import type { SectionLink, DocListItem } from '../types/boibInfo.js';
+import axios from "axios";
+import * as cheerio from "cheerio";
+import { customers, lastBoibInfo, HTTP_TIMEOUT, MAX_CONTENT_LENGTH, isAllowedUrl, domainUrl } from "../modules/global.js";
+import type { SectionLink, DocListItem } from "../types/boibInfo.js";
 
 export const searchForCustomers = async (links: string[]): Promise<void> => {
-  console.log(`Looking for ${customers} in: \n${links}\n`);
+  console.log(`Looking for ${customers.length} customer(s) in ${links.length} document(s)`);
   let localNumMatches = 0;
-  for (let link of links) {
+  for (const link of links) {
+    const safeLink = link.startsWith("/") ? domainUrl + link : link;
+    if (!isAllowedUrl(safeLink)) {
+      console.warn(`Skipping disallowed URL: ${safeLink}`);
+      continue;
+    }
     let docObj: DocListItem | undefined;
-    (lastBoibInfo.sectionLinks as SectionLink[]).forEach((sectionLink) => {
-      (sectionLink.docList as DocListItem[]).forEach((obj) => {
+    for (const sectionLink of lastBoibInfo.sectionLinks as SectionLink[]) {
+      for (const obj of sectionLink.docList as DocListItem[]) {
         if (obj.htmlLink === link) {
           docObj = obj;
         }
+      }
+    }
+    try {
+      const res = await axios.get(safeLink, {
+        timeout: HTTP_TIMEOUT,
+        maxContentLength: MAX_CONTENT_LENGTH,
+        maxBodyLength: MAX_CONTENT_LENGTH,
       });
-    });
-    const res = await axios.get(link);
-    const $ = cheerio.load(res.data) as CheerioAPI;
-    const tables = $('table');
-    tables.each((i: number, table: any) => {
-      const rows = $(table).find('tr');
-      rows.each((j: number, row: any) => {
-        const cells = $(row).find('td');
-        cells.each((k: number, cell: any) => {
-          const cellText = $(cell).text();
-          customers.forEach((customer: string) => {
-            if (cellText.toLowerCase().includes(customer.toLowerCase())) {
-              localNumMatches++;
-              let match = `PDF ${docObj?.id ?? ''} -> Table ${i + 1}, row ${j + 1}, cell ${k + 1}: ${cellText.trim()}`;
-              lastBoibInfo.customersMatched.push(match);
-              console.log(`Match found in ${match}`);
+      const $ = cheerio.load(res.data);
+      const tables = $("table");
+      tables.each((_i, table) => {
+        const rows = $(table).find("tr");
+        rows.each((_j, row) => {
+          const cells = $(row).find("td");
+          cells.each((_k, cell) => {
+            const cellText = $(cell).text();
+            for (const customer of customers) {
+              if (cellText.toLowerCase().includes(customer.toLowerCase())) {
+                localNumMatches++;
+                const match = `PDF ${docObj?.id ?? ""} -> Table, row, cell: ${cellText.trim()}`;
+                lastBoibInfo.customersMatched.push(match);
+                console.log(`Match found: ${match}`);
+              }
             }
           });
         });
       });
-    });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Error fetching ${safeLink}: ${message}`);
+    }
   }
   lastBoibInfo.numMatches = localNumMatches;
-  console.log(`Se han encontrado ${localNumMatches} coincidencias`);
-}
+  console.log(`Found ${localNumMatches} match(es)`);
+};
