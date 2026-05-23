@@ -6,6 +6,7 @@ import ora from "ora";
 import { downloadedPdfPaths, lastBoibInfo } from "../modules/global.js";
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024;
+const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]);
 
 function sanitizePathSegment(segment: string): string {
   return segment.replace(/\.\./g, "").replace(/[<>:"|?*]/g, "_").replace(/\0/g, "");
@@ -29,6 +30,11 @@ export const downloadPdfs = async (links: string[]): Promise<void> => {
         maxContentLength: MAX_PDF_SIZE,
         maxBodyLength: MAX_PDF_SIZE,
       });
+      const data = Buffer.from(response.data as ArrayBuffer);
+      if (data.length < 4 || !data.subarray(0, 4).equals(PDF_MAGIC)) {
+        spinner.warn(`Skipping non-PDF content from ${link}`);
+        continue;
+      }
       const fileName = sanitizePathSegment(link.split("/").pop() || `boib_${Date.now()}.pdf`);
       if (!fileName.endsWith(".pdf")) {
         continue;
@@ -39,7 +45,7 @@ export const downloadPdfs = async (links: string[]): Promise<void> => {
         spinner.warn(`Skipping potentially unsafe path: ${fileName}`);
         continue;
       }
-      await fs.writeFile(filePath, response.data as Buffer);
+      await fs.writeFile(filePath, data);
       spinner.text = `Downloaded ${fileName}`;
     } catch (err) {
       spinner.warn(`Failed to download ${link}: ${err instanceof Error ? err.message : String(err)}`);

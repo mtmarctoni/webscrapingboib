@@ -37,6 +37,7 @@ This application is a web scraper that:
 - All HTTP requests are restricted to `caib.es` domain via `isAllowedUrl()` whitelist
 - Request timeouts (15s) and size limits (10MB) on all network calls
 - Path traversal sanitization on all file system writes
+- PDF magic byte validation before writing downloaded content
 - Email subject/body CRLF sanitization to prevent header injection
 - `rejectUnauthorized: true` on HTTPS agent
 - `strict: true` TypeScript for compile-time safety
@@ -45,7 +46,6 @@ This application is a web scraper that:
 
 ### Known Limitations
 
-- No PDF integrity verification (magic bytes check)
 - No rate limiting between requests
 - No runtime schema validation for `lastBoibInfo.json`
 - Parser relies on specific DOM structure of BOIB website

@@ -1,7 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import https from "https";
 import fs from "fs/promises";
-import sfs from "fs";
 import * as cheerio from "cheerio";
 import {
   domainUrl,
@@ -62,12 +61,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries: number = 3, delayM
 }
 
 export const readDataBase = async (lastBoibInfoFile: string): Promise<void> => {
-  if (!sfs.existsSync(lastBoibInfoFile)) {
-    console.log("JSON file does not exist. Creating a new one...");
-    Object.assign(lastBoibInfo, resetInfo());
-    await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo, null, 2), "utf8");
-    console.log(`File ${lastBoibInfoFile} created.`);
-  } else {
+  try {
     const res = await fs.readFile(lastBoibInfoFile, "utf8");
     if (!res) {
       console.log("JSON file is empty.");
@@ -77,6 +71,15 @@ export const readDataBase = async (lastBoibInfoFile: string): Promise<void> => {
       Object.assign(previousBoibInfo, data);
       Object.assign(lastBoibInfo, resetInfo());
       console.log("Data loaded from database");
+    }
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      console.log("JSON file does not exist. Creating a new one...");
+      Object.assign(lastBoibInfo, resetInfo());
+      await fs.writeFile(lastBoibInfoFile, JSON.stringify(lastBoibInfo, null, 2), "utf8");
+      console.log(`File ${lastBoibInfoFile} created.`);
+    } else {
+      throw err;
     }
   }
 };
