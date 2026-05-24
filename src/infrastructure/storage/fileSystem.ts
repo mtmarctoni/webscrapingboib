@@ -1,5 +1,4 @@
 import fs from "fs/promises";
-import path from "path";
 import type { AppConfig } from "../../config/environment.js";
 
 const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]);
