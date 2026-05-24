@@ -22,6 +22,19 @@ describe("parseBulletin", () => {
     expect(result.linkUltimoBoletin).toBe("https://www.caib.es/eboibfront/ca/2024/2024");
   });
 
+  it("extracts bulletin metadata with hyphen separator", () => {
+    const html = `
+      <div class="ultimoBoletin">
+        <div class="caja whitebg">
+          <p><a href="/eboibfront/2023/99">BOIB núm. 99 - 3 de abril de 2023</a></p>
+        </div>
+      </div>
+    `;
+    const result = parseBulletin(html, "https://www.caib.es/eboibfront/ca");
+    expect(result.idAnualBoib).toBe("99");
+    expect(result.dateLastBoib).toBe("2023-04-03");
+  });
+
   it("extracts bulletin metadata with 'de' format (no em dash)", () => {
     const html = `
       <div class="ultimoBoletin">

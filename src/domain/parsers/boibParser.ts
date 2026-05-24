@@ -33,7 +33,8 @@ export function parseBulletin(html: string, baseUrl: string): BulletinMetadata {
 
   const idUltimoBoletin = subLinkUltimoBoletin.split("/").reverse()[1] ?? "";
 
-  const bulletinRegex = /BOIB\s+núm\.\s+(\d+)\s*(?:—|de)\s*(\d{1,2})\s+de\s+(\S+)\s+de\s+(\d{4})/;
+  const bulletinRegex =
+    /BOIB\s+núm\.\s+(\d+)\s*(?:[—-]|de)\s*(\d{1,2})\s+de\s+(\S+)\s+de\s+(\d{4})/;
   const match = ultimoBoletin.match(bulletinRegex);
 
   if (!match) {
