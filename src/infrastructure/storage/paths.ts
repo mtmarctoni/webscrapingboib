@@ -1,10 +1,17 @@
-import path from "path";
+import path from "node:path";
 
 export function sanitizePathSegment(segment: string): string {
-  return segment.replace(/\.\./g, "").replace(/[<>:"|?*]/g, "_").replace(/\0/g, "");
+  return segment
+    .replace(/\.\./g, "")
+    .replace(/[<>:"|?*]/g, "_")
+    .replace(/\0/g, "");
 }
 
-export function buildDownloadFolderName(idAnualBoib: string, dateLastBoib: string, pdfDownloadFolder: string): string {
+export function buildDownloadFolderName(
+  idAnualBoib: string,
+  dateLastBoib: string,
+  pdfDownloadFolder: string,
+): string {
   const sanitizedId = sanitizePathSegment(idAnualBoib);
   const date = new Date(dateLastBoib);
   const folderName = `${sanitizedId}_${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;

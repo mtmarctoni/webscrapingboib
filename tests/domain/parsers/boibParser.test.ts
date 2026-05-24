@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { parseBulletin, parseSectionMenu, parseDocList } from "../../../src/domain/parsers/boibParser.js";
+import { describe, expect, it } from "vitest";
+import {
+  parseBulletin,
+  parseDocList,
+  parseSectionMenu,
+} from "../../../src/domain/parsers/boibParser.js";
 
 describe("parseBulletin", () => {
   it("extracts bulletin metadata from HTML", () => {
@@ -22,7 +26,9 @@ describe("parseBulletin", () => {
 
   it("throws when bulletin link is missing", () => {
     const html = `<div class="ultimoBoletin"><div class="caja whitebg"><p><a>Text without href</a></p></div></div>`;
-    expect(() => parseBulletin(html, "https://www.caib.es/eboibfront/ca")).toThrow("Could not find bulletin link");
+    expect(() => parseBulletin(html, "https://www.caib.es/eboibfront/ca")).toThrow(
+      "Could not find bulletin link",
+    );
   });
 });
 
@@ -39,7 +45,11 @@ describe("parseSectionMenu", () => {
     expect(result.isExtraordinary).toBe(true);
     expect(result.sections).toHaveLength(2);
     // Trailing slash gives reverse()[1] = "section-1"
-    expect(result.sections[0]).toMatchObject({ id: 0, titulo: "section 1", link: "https://www.caib.es/section-1/" });
+    expect(result.sections[0]).toMatchObject({
+      id: 0,
+      titulo: "section 1",
+      link: "https://www.caib.es/section-1/",
+    });
   });
 
   it("returns empty sections when no menu found", () => {

@@ -12,6 +12,9 @@ node_modules/
 dist/
 build/
 
+# test coverage output
+coverage/
+
 # output files
 BOIBpdfs/
 lastBoibInfo.json

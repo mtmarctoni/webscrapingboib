@@ -1,10 +1,15 @@
-import ora, { type Ora } from "ora";
+import ora from "ora";
 
 export interface Logger {
   info(message: string): void;
   warn(message: string): void;
   error(message: string): void;
-  spinner(text: string): { start(): void; text: string; succeed(text?: string): void; warn(text?: string): void };
+  spinner(text: string): {
+    start(): void;
+    text: string;
+    succeed(text?: string): void;
+    warn(text?: string): void;
+  };
 }
 
 export function createLogger(): Logger {

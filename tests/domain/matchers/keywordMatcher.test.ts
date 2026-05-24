@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { matchKeywords } from "../../../src/domain/matchers/keywordMatcher.js";
 import type { DocListItem } from "../../../src/domain/models/boib.js";
 

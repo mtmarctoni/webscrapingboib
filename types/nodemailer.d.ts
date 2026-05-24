@@ -32,5 +32,5 @@ declare module "nodemailer" {
 
   function createTransport(options: SmtpOptions): Transporter;
 
-  export { createTransport, type Transporter, type SmtpOptions, type MailOptions, type Attachment };
+  export { type Attachment, createTransport, type MailOptions, type SmtpOptions, type Transporter };
 }

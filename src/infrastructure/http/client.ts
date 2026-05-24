@@ -1,5 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
-import https from "https";
+import https from "node:https";
+import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 import type { AppConfig } from "../../config/environment.js";
 
 export interface HttpClient {
@@ -24,7 +24,11 @@ function isAllowedUrl(link: string, allowedDomain: string): boolean {
   }
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries: number = 3, delayMs: number = 2000): Promise<T> {
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 2000,
+): Promise<T> {
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -37,7 +41,9 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries: number = 3, delayM
       }
     }
   }
-  throw new HttpError(`Failed after ${maxRetries} retries: ${lastError?.message ?? "unknown error"}`);
+  throw new HttpError(
+    `Failed after ${maxRetries} retries: ${lastError?.message ?? "unknown error"}`,
+  );
 }
 
 export function createHttpClient(config: AppConfig): HttpClient {
@@ -70,7 +76,7 @@ export function createHttpClient(config: AppConfig): HttpClient {
           timeout: 30000,
           maxContentLength: maxSize,
           maxBodyLength: maxSize,
-        })
+        }),
       );
       return Buffer.from(response.data as ArrayBuffer);
     },

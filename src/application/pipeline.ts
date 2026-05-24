@@ -1,5 +1,4 @@
 import type { AppConfig } from "../config/environment.js";
-import type { ScrapeResult } from "../domain/models/boib.js";
 import type { Dependencies } from "./useCases/scrapeBoib.js";
 import { runScrape } from "./useCases/scrapeBoib.js";
 
@@ -10,7 +9,7 @@ export interface PipelineResult {
 
 export async function runScrapePipeline(
   config: AppConfig,
-  deps: Dependencies
+  deps: Dependencies,
 ): Promise<PipelineResult> {
   try {
     const result = await runScrape(config, deps);
