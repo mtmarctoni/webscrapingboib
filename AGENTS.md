@@ -56,8 +56,11 @@ Bypass with `git commit --no-verify`.
 
 Blocks direct pushes to `main`. Always use a feature branch + PR.
 
-## Merging
+## Merging — HUMAN GATE REQUIRED
 
+- **CRITICAL RULE: Never modify the `main` branch directly.** Always create a feature branch off `main` and open a PR.
+- **CRITICAL RULE: Never merge a PR without explicit verbal approval from the user.** "Explicit verbal approval" means the user says a clear phrase like "merge it" or "go ahead and merge" or "approved". A silent CI pass, a review comment, or an implied "should be fine" is NOT approval. Wait.
+- Create the PR, post the link, ask the user to review. Do not merge after review unless told.
 - **Squash commit** — always squash feature branches into a single commit on merge
 - **Delete branch** — delete the feature branch after merge
 
