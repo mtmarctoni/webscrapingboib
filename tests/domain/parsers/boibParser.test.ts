@@ -6,7 +6,7 @@ import {
 } from "../../../src/domain/parsers/boibParser.js";
 
 describe("parseBulletin", () => {
-  it("extracts bulletin metadata from HTML", () => {
+  it("extracts bulletin metadata from HTML with em dash format", () => {
     const html = `
       <div class="ultimoBoletin">
         <div class="caja whitebg">
@@ -16,18 +16,56 @@ describe("parseBulletin", () => {
     `;
     const result = parseBulletin(html, "https://www.caib.es/eboibfront/ca");
     expect(result.ultimoBoletin).toContain("BOIB");
-    // idBoib comes from reversed URL segments: /eboibfront/2024/12345 → reverse()[1] = "2024"
     expect(result.idBoib).toBe("2024");
-    // idAnualBoib comes from words[6] of the title text
-    expect(result.idAnualBoib).toBe("gener");
-    // linkUltimoBoletin = baseUrl + ano + idBoib = .../2024/2024
+    expect(result.idAnualBoib).toBe("12345");
+    expect(result.dateLastBoib).toBe("2024-01-15");
     expect(result.linkUltimoBoletin).toBe("https://www.caib.es/eboibfront/ca/2024/2024");
+  });
+
+  it("extracts bulletin metadata with hyphen separator", () => {
+    const html = `
+      <div class="ultimoBoletin">
+        <div class="caja whitebg">
+          <p><a href="/eboibfront/2023/99">BOIB núm. 99 - 3 de abril de 2023</a></p>
+        </div>
+      </div>
+    `;
+    const result = parseBulletin(html, "https://www.caib.es/eboibfront/ca");
+    expect(result.idAnualBoib).toBe("99");
+    expect(result.dateLastBoib).toBe("2023-04-03");
+  });
+
+  it("extracts bulletin metadata with 'de' format (no em dash)", () => {
+    const html = `
+      <div class="ultimoBoletin">
+        <div class="caja whitebg">
+          <p><a href="/eboibfront/2025/6789">BOIB núm. 6789 de 5 de març de 2025</a></p>
+        </div>
+      </div>
+    `;
+    const result = parseBulletin(html, "https://www.caib.es/eboibfront/ca");
+    expect(result.idAnualBoib).toBe("6789");
+    expect(result.dateLastBoib).toBe("2025-03-05");
+    expect(result.linkUltimoBoletin).toBe("https://www.caib.es/eboibfront/ca/2025/2025");
   });
 
   it("throws when bulletin link is missing", () => {
     const html = `<div class="ultimoBoletin"><div class="caja whitebg"><p><a>Text without href</a></p></div></div>`;
     expect(() => parseBulletin(html, "https://www.caib.es/eboibfront/ca")).toThrow(
       "Could not find bulletin link",
+    );
+  });
+
+  it("throws when bulletin text does not match expected date format", () => {
+    const html = `
+      <div class="ultimoBoletin">
+        <div class="caja whitebg">
+          <p><a href="/eboibfront/2024/12345">Invalid format no numbers here</a></p>
+        </div>
+      </div>
+    `;
+    expect(() => parseBulletin(html, "https://www.caib.es/eboibfront/ca")).toThrow(
+      "Could not parse bulletin text",
     );
   });
 });
