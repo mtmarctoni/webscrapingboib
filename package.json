@@ -8,7 +8,8 @@
   "scripts": {
     "start": "tsc && node dist/src/main.js",
     "dev": "tsc && node --watch dist/src/main.js",
-    "try": "rm lastBoibInfo.json && pnpm start",
+    "reset": "rm -f lastBoibInfo.json && rm -rf BOIBpdfs",
+    "try": "rm -f lastBoibInfo.json && pnpm start",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/ tests/",
     "lint:fix": "biome check --write --unsafe src/ tests/",
