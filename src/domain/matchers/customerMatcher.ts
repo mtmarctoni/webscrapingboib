@@ -1,5 +1,8 @@
 import * as cheerio from "cheerio";
 
+/**
+ * Represents a customer name found within an HTML table cell.
+ */
 export interface CustomerMatch {
   docId: string;
   tableIndex: number;
@@ -9,6 +12,13 @@ export interface CustomerMatch {
   customer: string;
 }
 
+/**
+ * Searches HTML table cells for customer names. Matching is case-insensitive.
+ * @param htmlText - Raw HTML content to search within
+ * @param customers - Customer names to look for
+ * @param docId - Document identifier to attach to each match
+ * @returns Array of matches with table, row, and cell positions
+ */
 export function matchCustomers(
   htmlText: string,
   customers: string[],
