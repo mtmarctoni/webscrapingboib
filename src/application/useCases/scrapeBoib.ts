@@ -127,7 +127,8 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
           spinner.warn(`Skipping non-PDF content from ${link}`);
           continue;
         }
-        const fileName = link.split("/").pop() || `boib_${Date.now()}.pdf`;
+        const baseName = link.split("/").pop() || `boib_${Date.now()}`;
+        const fileName = baseName.endsWith(".pdf") ? baseName : `${baseName}.pdf`;
         const filePath = resolveSafePath(folderPath, fileName);
         if (!filePath) {
           spinner.warn(`Skipping potentially unsafe path: ${fileName}`);
