@@ -2,64 +2,83 @@
 
 A Node.js/TypeScript project for scraping, processing, and emailing information from BOIB PDFs.
 
+📖 **Documentation**
+- [Architecture](ARCHITECTURE.md) — Layer design, data flow, ADRs, extension patterns
+- [Contributing](CONTRIBUTING.md) — Setup, workflow, conventions, testing
+- [Security](SECURITY.md) — Threat model, mitigations, operator checklist
+
+## Quick Start
+
+```bash
+pnpm install
+cp .env.template .env    # Edit with your credentials
+pnpm start
+```
+
 ## Features
 
 - Scrapes and processes BOIB PDF files stored in `BOIBpdfs/`
 - Searches for specific keywords in PDFs (configurable via `.env`)
 - Associates results with customers (configurable via `.env`)
 - Sends email notifications using Zoho SMTP
-- Logs output and results
 
-## Project Structure
+## Directory Structure
 
-- `main.ts` — Main entry point for scraping and processing
-- `modules/` — Shared/global logic
-- `services/` — Business logic (PDF, email, customer, BOIB)
-- `types/` — TypeScript type definitions
-- `BOIBpdfs/` — Folder containing BOIB PDF files (organized by date)
-- `.env` — Environment configuration (not tracked by git)
-- `.env.template` — Example environment config (tracked by git)
+```
+src/
+  main.ts                    — Entry point (~20 lines)
+  config/
+    environment.ts           — .env loader + validation → typed AppConfig
+    constants.ts             — URLs, month names, timeouts, sizes
+  domain/
+    models/boib.ts           — Data models: BoibState, SectionLink, DocListItem
+    parsers/boibParser.ts    — HTML → structured data (pure functions)
+    matchers/
+      keywordMatcher.ts      — Filter docs by keywords (pure)
+      customerMatcher.ts     — Find customer names in HTML tables (pure)
+  infrastructure/
+    http/client.ts           — Axios with retry + URL whitelist
+    storage/
+      fileSystem.ts          — JSON R/W, PDF magic byte validation
+      paths.ts               — Path sanitization, folder naming
+    email/
+      transport.ts           — Nodemailer transport factory
+      template.ts            — Email body composition
+    logger.ts                — Console + ora spinner abstraction
+  application/
+    pipeline.ts              — Error handling wrapper
+    useCases/scrapeBoib.ts   — Full workflow orchestration
 
-## Setup
+tests/                       — Vitest test suite
+BOIBpdfs/                    — Downloaded PDFs organized by date
+```
 
-1. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
-2. **Configure environment**
-   - Copy `.env.template` to `.env` and fill in your values (Zoho credentials, recipients, keywords, customers)
-3. **Run the project**
-   ```bash
-   pnpm start
-   # or
-   bash run-node-project.bat
-   ```
+## Development Commands
+
+| Command | Purpose |
+|---|---|
+| `pnpm typecheck` | TypeScript type check |
+| `pnpm build` | Compile to `dist/` |
+| `pnpm test` | Run Vitest suite |
+| `pnpm test:watch` | Tests in watch mode |
+| `pnpm coverage` | Tests with coverage report |
+| `pnpm audit` | Security audit |
+| `pnpm start` | Compile and run |
+| `pnpm dev` | Compile and watch for changes |
 
 ## Environment Variables
 
-See `.env.template` for all required variables:
+See `.env.template` for all available variables.
 
-- `ZOHO_USER`, `ZOHO_PASSWORD` — Zoho SMTP credentials
-- `RECIPIENT1`, `RECIPIENT2`, `RECIPIENT3` — Email recipients
-- `WORDTOSEARCH_1` ... `WORDTOSEARCH_9` — Keywords to search in PDFs
-- `CUSTOMER_1` ... `CUSTOMER_7` — Customer names
-
-## Output
-
-- Results and logs are written to `output.log` and `lastBoibInfo.json`
-- Processed PDFs are stored in `BOIBpdfs/`
-
-## Development
-
-- TypeScript configuration: `tsconfig.json`
-- Logging: All logs go to `output.log`
-- Add new keywords/customers by editing `.env`
-
-## Notes
-
-- `.env` is ignored by git; `.env.template` is tracked for reference
-- Email sending uses Zoho SMTP (see `modules/global.ts`)
-- For troubleshooting, check `output.log`
+| Variable | Required | Purpose |
+|---|---|---|
+| `ZOHO_USER` | Yes | SMTP login email |
+| `ZOHO_PASSWORD` | Yes | SMTP password |
+| `WORDTOSEARCH_1` | Yes | First search keyword |
+| `WORDTOSEARCH_2..9` | No | Additional keywords |
+| `CUSTOMER_1..7` | No | Customer names to match in HTML tables |
+| `RECIPIENT1..3` | No | Email recipients |
+| `SEND_EMAIL` | No | Set to `false` to disable email |
 
 ## License
 

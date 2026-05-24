@@ -27,4 +27,4 @@ output.txt
 *.p12
 credentials.json
 service-account*.json
-pnpm-workspace.yaml
+# pnpm-workspace.yaml is tracked for onlyBuiltDependencies config

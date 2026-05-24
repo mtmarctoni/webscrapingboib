@@ -12,7 +12,7 @@ export interface SectionLink {
   docList: DocListItem[];
 }
 
-export interface BoibInfo {
+export interface BoibState {
   ultimoBoletin: string;
   isExtraordinary: boolean;
   idBoib: string;
@@ -22,4 +22,26 @@ export interface BoibInfo {
   customersMatched: string[];
   sectionLinks: SectionLink[];
   numMatches: number;
+}
+
+export interface ScrapeResult {
+  success: boolean;
+  state: BoibState;
+  downloadedPdfPaths: string[];
+  numMatches: number;
+  emailSent: boolean;
+}
+
+export function createEmptyBoibState(): BoibState {
+  return {
+    ultimoBoletin: "",
+    isExtraordinary: false,
+    idBoib: "",
+    idAnualBoib: "",
+    dateLastBoib: "",
+    linkUltimoBoletin: "",
+    customersMatched: [],
+    sectionLinks: [],
+    numMatches: 0,
+  };
 }

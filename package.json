@@ -3,16 +3,18 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "dist/main.js",
+  "main": "dist/src/main.js",
   "packageManager": "pnpm@11.0.0",
   "scripts": {
-    "start": "tsc && node dist/main.js",
-    "dev": "tsc && node --watch dist/main.js",
+    "start": "tsc && node dist/src/main.js",
+    "dev": "tsc && node --watch dist/src/main.js",
     "try": "rm lastBoibInfo.json && pnpm start",
     "typecheck": "tsc --noEmit",
     "audit": "pnpm audit",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
     "postinstall": "git config core.hooksPath .github/hooks 2>/dev/null; true"
   },
   "dependencies": {
@@ -22,8 +24,13 @@
     "nodemailer": "^8.0.5",
     "ora": "^9.4.0"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
   "devDependencies": {
     "@types/node": "^24.3.0",
-    "typescript": "^5.9.2"
+    "@vitest/coverage-v8": "^3.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.0.0"
   }
 }
