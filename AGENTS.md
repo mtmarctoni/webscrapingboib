@@ -56,6 +56,11 @@ Bypass with `git commit --no-verify`.
 
 Blocks direct pushes to `main`. Always use a feature branch + PR.
 
+## Merging
+
+- **Squash commit** — always squash feature branches into a single commit on merge
+- **Delete branch** — delete the feature branch after merge
+
 ## Environment
 
 Enforced by code at startup via `loadConfig()`. Required: `ZOHO_USER`, `ZOHO_PASSWORD`, `WORDTOSEARCH_1`.
