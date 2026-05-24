@@ -47,4 +47,18 @@ if [ -n "$STAGED_TS_FILES" ]; then
   echo "Type check passed."
 fi
 
+# --- Run Biome lint and format check ---
+if [ -n "$STAGED_TS_FILES" ]; then
+  echo "Running Biome lint and format check..."
+  if ! npx @biomejs/biome check --staged; then
+    echo ""
+    echo "ERROR: Biome check failed."
+    echo "Run 'pnpm lint:fix' to auto-fix issues, then stage the changes and try again."
+    echo "Use 'git commit --no-verify' to bypass."
+    echo ""
+    exit 1
+  fi
+  echo "Biome check passed."
+fi
+
 echo "Pre-commit checks passed."

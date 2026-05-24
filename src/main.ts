@@ -1,9 +1,9 @@
-import { loadConfig, type AppConfig } from "./config/environment.js";
-import { createHttpClient } from "./infrastructure/http/client.js";
-import { createFileSystem } from "./infrastructure/storage/fileSystem.js";
-import { createEmailTransport } from "./infrastructure/email/transport.js";
-import { createLogger } from "./infrastructure/logger.js";
 import { runScrapePipeline } from "./application/pipeline.js";
+import { type AppConfig, loadConfig } from "./config/environment.js";
+import { createEmailTransport } from "./infrastructure/email/transport.js";
+import { createHttpClient } from "./infrastructure/http/client.js";
+import { createLogger } from "./infrastructure/logger.js";
+import { createFileSystem } from "./infrastructure/storage/fileSystem.js";
 
 async function main(): Promise<void> {
   console.log("----------");

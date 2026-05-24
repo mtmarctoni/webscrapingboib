@@ -12,7 +12,14 @@ export interface EmailContent {
   attachments: { filename: string; path: string }[];
 }
 
-export function composeEmail(result: ScrapeResult, config: { smtp: { user: string; recipients: string[] }; wordsToSearch: string[]; customers: string[] }): EmailContent {
+export function composeEmail(
+  result: ScrapeResult,
+  config: {
+    smtp: { user: string; recipients: string[] };
+    wordsToSearch: string[];
+    customers: string[];
+  },
+): EmailContent {
   let emailBody = `\nAuto-generated notification.\n`;
 
   if (result.downloadedPdfPaths.length === 0) {

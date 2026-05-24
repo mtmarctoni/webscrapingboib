@@ -1,14 +1,14 @@
 import type { AppConfig } from "../../config/environment.js";
-import type { BoibState, ScrapeResult, DocListItem, SectionLink } from "../../domain/models/boib.js";
-import { createEmptyBoibState } from "../../domain/models/boib.js";
-import { parseBulletin, parseSectionMenu, parseDocList } from "../../domain/parsers/boibParser.js";
-import { matchKeywords } from "../../domain/matchers/keywordMatcher.js";
 import { matchCustomers } from "../../domain/matchers/customerMatcher.js";
-import type { HttpClient } from "../../infrastructure/http/client.js";
-import type { FileSystem } from "../../infrastructure/storage/fileSystem.js";
-import type { EmailTransport } from "../../infrastructure/email/transport.js";
+import { matchKeywords } from "../../domain/matchers/keywordMatcher.js";
+import type { BoibState, ScrapeResult } from "../../domain/models/boib.js";
+import { createEmptyBoibState } from "../../domain/models/boib.js";
+import { parseBulletin, parseDocList, parseSectionMenu } from "../../domain/parsers/boibParser.js";
 import { composeEmail } from "../../infrastructure/email/template.js";
+import type { EmailTransport } from "../../infrastructure/email/transport.js";
+import type { HttpClient } from "../../infrastructure/http/client.js";
 import type { Logger } from "../../infrastructure/logger.js";
+import type { FileSystem } from "../../infrastructure/storage/fileSystem.js";
 import { buildDownloadFolderName, resolveSafePath } from "../../infrastructure/storage/paths.js";
 
 export interface Dependencies {
@@ -53,14 +53,22 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
   // Fetch section links
   const sectionRes = await http.get(state.linkUltimoBoletin);
-  const { sections, isExtraordinary } = parseSectionMenu(sectionRes.data as string, config.allowedDomain);
+  const { sections, isExtraordinary } = parseSectionMenu(
+    sectionRes.data as string,
+    config.allowedDomain,
+  );
   state.isExtraordinary = isExtraordinary;
   logger.info(isExtraordinary ? "BOIB Extraordinari" : "BOIB ordinari");
 
   // Fetch doc lists for each section
   for (const section of sections) {
     const docRes = await http.get(section.link);
-    const docs = parseDocList(docRes.data as string, section.id, config.allowedDomain, config.allowedDomain);
+    const docs = parseDocList(
+      docRes.data as string,
+      section.id,
+      config.allowedDomain,
+      config.allowedDomain,
+    );
     section.docList = docs;
   }
   state.sectionLinks = sections;
@@ -69,7 +77,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   const allDocs = sections.flatMap((s) => s.docList);
   const filteredDocs = matchKeywords(allDocs, config.wordsToSearch);
 
-  let downloadedPdfPaths: string[] = [];
+  const downloadedPdfPaths: string[] = [];
   let numMatches = 0;
   let emailSent = false;
 
@@ -78,7 +86,11 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
     const htmlLinks = filteredDocs.map((d) => d.htmlLink).filter(Boolean);
 
     // Download PDFs
-    const folderPath = buildDownloadFolderName(state.idAnualBoib, state.dateLastBoib, config.pdfDownloadFolder);
+    const folderPath = buildDownloadFolderName(
+      state.idAnualBoib,
+      state.dateLastBoib,
+      config.pdfDownloadFolder,
+    );
     await fs.mkdir(folderPath);
 
     const spinner = logger.spinner(`Downloading PDFs to:\n${folderPath}`);
@@ -119,7 +131,9 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
     }
 
     // Match customers in HTML docs
-    logger.info(`Looking for ${config.customers.length} customer(s) in ${htmlLinks.length} document(s)`);
+    logger.info(
+      `Looking for ${config.customers.length} customer(s) in ${htmlLinks.length} document(s)`,
+    );
     for (const link of htmlLinks) {
       try {
         const res = await http.get(link);
@@ -155,7 +169,11 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       numMatches,
       emailSent: false,
     };
-    const mail = composeEmail(result, { smtp: config.smtp, wordsToSearch: config.wordsToSearch, customers: config.customers });
+    const mail = composeEmail(result, {
+      smtp: config.smtp,
+      wordsToSearch: config.wordsToSearch,
+      customers: config.customers,
+    });
     logger.info(`Sending email to ${config.smtp.recipients.join(", ")}`);
     await email.send(mail);
     emailSent = true;

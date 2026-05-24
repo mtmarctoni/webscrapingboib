@@ -36,6 +36,31 @@ jobs:
       - name: Type check
         run: pnpm exec tsc --noEmit
 
+  lint:
+    name: Biome Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Biome check
+        run: pnpm exec biome check src/ tests/
+
   audit:
     name: Dependency Audit
     runs-on: ubuntu-latest

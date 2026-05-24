@@ -1,9 +1,15 @@
-import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import nodemailer from "nodemailer";
 import type { AppConfig } from "../../config/environment.js";
 
 export interface EmailTransport {
-  send(options: { from: string; to: string; subject: string; text: string; attachments: { filename: string; path: string }[] }): Promise<void>;
+  send(options: {
+    from: string;
+    to: string;
+    subject: string;
+    text: string;
+    attachments: { filename: string; path: string }[];
+  }): Promise<void>;
 }
 
 export function createEmailTransport(config: AppConfig): EmailTransport {

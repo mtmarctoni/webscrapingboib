@@ -1,4 +1,4 @@
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import type { AppConfig } from "../../config/environment.js";
 
 const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]);
@@ -22,7 +22,11 @@ export function createFileSystem(_config: AppConfig): FileSystem {
         }
         return JSON.parse(content) as T;
       } catch (err: unknown) {
-        if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        if (
+          err instanceof Error &&
+          "code" in err &&
+          (err as NodeJS.ErrnoException).code === "ENOENT"
+        ) {
           return null;
         }
         throw err;

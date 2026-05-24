@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
-import type { SectionLink, DocListItem } from "../models/boib.js";
 import { MONTHS } from "../../config/constants.js";
+import type { DocListItem, SectionLink } from "../models/boib.js";
 
 export interface BulletinMetadata {
   ultimoBoletin: string;
@@ -33,7 +33,7 @@ export function parseBulletin(html: string, baseUrl: string): BulletinMetadata {
     console.warn(`Could not parse month "${monthName}" from bulletin text, defaulting to 01`);
     monthNumber = 1;
   }
-  const monthStr = monthNumber < 10 ? "0" + monthNumber : String(monthNumber);
+  const monthStr = monthNumber < 10 ? `0${monthNumber}` : String(monthNumber);
   const dayStr = wordsLastBoib[7] ?? "01";
   const stringDatelastBoib = `${wordsLastBoib[11] ?? ""}-${monthStr}-${dayStr}`;
   const dateLastBoib = new Date(stringDatelastBoib).toString();
@@ -74,7 +74,12 @@ export function parseSectionMenu(html: string, domainUrl: string): SectionMenuRe
   return { sections, isExtraordinary };
 }
 
-export function parseDocList(html: string, sectionId: number, domainUrl: string, allowedDomain: string): DocListItem[] {
+export function parseDocList(
+  html: string,
+  _sectionId: number,
+  domainUrl: string,
+  _allowedDomain: string,
+): DocListItem[] {
   const $ = cheerio.load(html);
   const docs: DocListItem[] = [];
   const llistatElement = $(".llistat");

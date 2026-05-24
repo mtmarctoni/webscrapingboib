@@ -9,7 +9,11 @@ export interface CustomerMatch {
   customer: string;
 }
 
-export function matchCustomers(htmlText: string, customers: string[], docId: string): CustomerMatch[] {
+export function matchCustomers(
+  htmlText: string,
+  customers: string[],
+  docId: string,
+): CustomerMatch[] {
   if (customers.length === 0) {
     return [];
   }
