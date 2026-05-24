@@ -50,7 +50,13 @@ export function createFileSystem(_config: AppConfig): FileSystem {
     },
 
     validatePdf(data: Buffer): boolean {
-      return data.length >= 4 && data.subarray(0, 4).equals(PDF_MAGIC);
+      if (data.length < 8) return false;
+      if (!data.subarray(0, 4).equals(PDF_MAGIC)) return false;
+      // Verify full header: %PDF-X.Y
+      const newlineIdx = data.indexOf(0x0a);
+      const lineEnd = newlineIdx > 0 ? newlineIdx : data.length;
+      const header = data.subarray(0, lineEnd).toString("ascii").replace(/\r$/, "");
+      return /^%PDF-\d+\.\d+$/.test(header);
     },
   };
 }

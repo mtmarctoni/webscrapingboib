@@ -78,6 +78,10 @@ export function createHttpClient(config: AppConfig): HttpClient {
           maxBodyLength: maxSize,
         }),
       );
+      const contentType = String(response.headers["content-type"] ?? "");
+      if (!contentType.startsWith("application/pdf")) {
+        throw new HttpError(`Expected application/pdf, got "${contentType}" for ${url}`);
+      }
       return Buffer.from(response.data as ArrayBuffer);
     },
   };
