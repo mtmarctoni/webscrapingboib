@@ -10,6 +10,9 @@ function requireMatchGroup(match: RegExpMatchArray, index: number): string {
   return value;
 }
 
+/**
+ * Metadata extracted from the BOIB bulletin index page.
+ */
 export interface BulletinMetadata {
   ultimoBoletin: string;
   idBoib: string;
@@ -19,6 +22,13 @@ export interface BulletinMetadata {
   isExtraordinary: boolean;
 }
 
+/**
+ * Parses the BOIB bulletin index page to extract metadata about the latest bulletin.
+ * @param html - The HTML content of the BOIB index page
+ * @param baseUrl - The base URL for constructing absolute links
+ * @returns Bulletin metadata including ID, date, and link
+ * @throws {Error} When the bulletin link cannot be found or the date format is unparseable
+ */
 export function parseBulletin(html: string, baseUrl: string): BulletinMetadata {
   const $ = cheerio.load(html);
   const ultimoBoletin = $("div.ultimoBoletin div.caja.whitebg p a")
@@ -64,11 +74,22 @@ export function parseBulletin(html: string, baseUrl: string): BulletinMetadata {
   };
 }
 
+/**
+ * Result of parsing the section menu, containing section links and whether
+ * the bulletin is an extraordinary edition.
+ */
 export interface SectionMenuResult {
   sections: SectionLink[];
   isExtraordinary: boolean;
 }
 
+/**
+ * Parses the section menu HTML to extract navigation links for each section.
+ * Detects if the bulletin is an extraordinary edition.
+ * @param html - The HTML content of the section menu page
+ * @param domainUrl - The domain URL for constructing absolute section links
+ * @returns Section links and extraordinary flag
+ */
 export function parseSectionMenu(html: string, domainUrl: string): SectionMenuResult {
   const $ = cheerio.load(html);
   const isExtraordinary = $("a.fijo p").last().text().includes("Extraordinari");
@@ -90,6 +111,15 @@ export function parseSectionMenu(html: string, domainUrl: string): SectionMenuRe
   return { sections, isExtraordinary };
 }
 
+/**
+ * Parses the document list HTML to extract individual document items with
+ * their PDF download links and descriptions.
+ * @param html - The HTML content of the document list page
+ * @param _sectionId - Section identifier (unused, reserved for future use)
+ * @param domainUrl - The domain URL for constructing absolute document links
+ * @param _allowedDomain - Allowed domain for link filtering (unused, reserved for future use)
+ * @returns Array of parsed document list items
+ */
 export function parseDocList(
   html: string,
   _sectionId: number,

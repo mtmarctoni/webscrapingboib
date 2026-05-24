@@ -1,3 +1,6 @@
+/**
+ * A single document entry within a BOIB section listing.
+ */
 export interface DocListItem {
   id: string;
   htmlLink: string;
@@ -5,6 +8,9 @@ export interface DocListItem {
   downloadPdfLink: string;
 }
 
+/**
+ * A navigation section link within the BOIB bulletin menu.
+ */
 export interface SectionLink {
   id: number;
   titulo: string;
@@ -12,6 +18,10 @@ export interface SectionLink {
   docList: DocListItem[];
 }
 
+/**
+ * Represents the full state of a BOIB scrape operation, including bulletin
+ * metadata, matched customers, and section contents.
+ */
 export interface BoibState {
   ultimoBoletin: string;
   isExtraordinary: boolean;
@@ -24,6 +34,10 @@ export interface BoibState {
   numMatches: number;
 }
 
+/**
+ * Outcome of a complete BOIB scrape run, including downloaded PDFs and
+ * whether an email was sent.
+ */
 export interface ScrapeResult {
   success: boolean;
   state: BoibState;
@@ -32,6 +46,10 @@ export interface ScrapeResult {
   emailSent: boolean;
 }
 
+/**
+ * Creates a new BoibState with all fields initialised to empty defaults.
+ * @returns A fresh, empty BoibState
+ */
 export function createEmptyBoibState(): BoibState {
   return {
     ultimoBoletin: "",
