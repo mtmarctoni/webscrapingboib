@@ -1,0 +1,20 @@
+#!/bin/sh
+# Pre-push hook for webscrapingboib
+# Blocks direct pushes to main branch. Always use PRs.
+
+set -e
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo ""
+    echo "ERROR: Direct push to 'main' is blocked."
+    echo "  Always create a feature branch and open a PR:"
+    echo "    git checkout -b feat/my-change"
+    echo "    git push -u origin feat/my-change"
+    echo "  Then create a PR via 'gh pr create' or GitHub UI."
+    echo ""
+    exit 1
+  fi
+done
+
+exit 0
