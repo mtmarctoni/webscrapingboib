@@ -2,6 +2,14 @@ import * as cheerio from "cheerio";
 import { MONTHS } from "../../config/constants.js";
 import type { DocListItem, SectionLink } from "../models/boib.js";
 
+function requireMatchGroup(match: RegExpMatchArray, index: number): string {
+  const value = match[index];
+  if (value === undefined) {
+    throw new Error("Internal error: missing capture group in regex");
+  }
+  return value;
+}
+
 export interface BulletinMetadata {
   ultimoBoletin: string;
   idBoib: string;
@@ -23,27 +31,34 @@ export function parseBulletin(html: string, baseUrl: string): BulletinMetadata {
     throw new Error("Could not find bulletin link on the BOIB page");
   }
 
-  const anoUltimoBoletin = ultimoBoletin.match(/(\d{4})$/)?.[0] ?? "";
   const idUltimoBoletin = subLinkUltimoBoletin.split("/").reverse()[1] ?? "";
-  const wordsLastBoib = ultimoBoletin.split(" ");
-  const idAnualBoib = wordsLastBoib[6] ?? "";
-  const monthName = wordsLastBoib[9] ?? "";
-  let monthNumber = MONTHS.indexOf(monthName) + 1;
-  if (monthNumber === 0) {
-    console.warn(`Could not parse month "${monthName}" from bulletin text, defaulting to 01`);
-    monthNumber = 1;
+
+  const bulletinRegex = /BOIB\s+núm\.\s+(\d+)\s*(?:—|de)\s*(\d{1,2})\s+de\s+(\S+)\s+de\s+(\d{4})/;
+  const match = ultimoBoletin.match(bulletinRegex);
+
+  if (!match) {
+    throw new Error(`Could not parse bulletin text: "${ultimoBoletin}"`);
   }
-  const monthStr = monthNumber < 10 ? `0${monthNumber}` : String(monthNumber);
-  const dayStr = wordsLastBoib[7] ?? "01";
-  const stringDatelastBoib = `${wordsLastBoib[11] ?? ""}-${monthStr}-${dayStr}`;
-  const dateLastBoib = new Date(stringDatelastBoib).toString();
+
+  const idAnualBoib = requireMatchGroup(match, 1);
+  const dayStr = requireMatchGroup(match, 2).padStart(2, "0");
+  const monthName = requireMatchGroup(match, 3);
+  const yearStr = requireMatchGroup(match, 4);
+
+  const monthNum = MONTHS.indexOf(monthName) + 1;
+  if (monthNum === 0) {
+    throw new Error(`Unknown month "${monthName}" in bulletin text: "${ultimoBoletin}"`);
+  }
+  const monthStr = String(monthNum).padStart(2, "0");
+
+  const dateLastBoib = `${yearStr}-${monthStr}-${dayStr}`;
 
   return {
     ultimoBoletin,
     idBoib: idUltimoBoletin,
     idAnualBoib,
     dateLastBoib,
-    linkUltimoBoletin: `${baseUrl}/${anoUltimoBoletin}/${idUltimoBoletin}`,
+    linkUltimoBoletin: `${baseUrl}/${yearStr}/${idUltimoBoletin}`,
     isExtraordinary: false,
   };
 }
