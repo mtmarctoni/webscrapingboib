@@ -49,6 +49,20 @@ describe("parseBulletin", () => {
     expect(result.linkUltimoBoletin).toBe("https://www.caib.es/eboibfront/ca/2025/2025");
   });
 
+  it("extracts bulletin metadata from live BOIB format (slash-separated date)", () => {
+    const html = `
+      <div class="ultimoBoletin">
+        <div class="caja whitebg">
+          <p><a href="/eboibfront/2026/12278">El darrer Butlletí Oficial és el 065 <br/> 23 / maig / 2026</a></p>
+        </div>
+      </div>
+    `;
+    const result = parseBulletin(html, "https://www.caib.es/eboibfront/ca");
+    expect(result.idAnualBoib).toBe("065");
+    expect(result.dateLastBoib).toBe("2026-05-23");
+    expect(result.idBoib).toBe("2026");
+  });
+
   it("throws when bulletin link is missing", () => {
     const html = `<div class="ultimoBoletin"><div class="caja whitebg"><p><a>Text without href</a></p></div></div>`;
     expect(() => parseBulletin(html, "https://www.caib.es/eboibfront/ca")).toThrow(
