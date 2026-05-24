@@ -73,7 +73,7 @@ export function createHttpClient(config: AppConfig): HttpClient {
       const response = await withRetry(() =>
         instance.get(url, {
           responseType: "arraybuffer",
-          timeout: 30000,
+          timeout: config.httpTimeout,
           maxContentLength: maxSize,
           maxBodyLength: maxSize,
         }),

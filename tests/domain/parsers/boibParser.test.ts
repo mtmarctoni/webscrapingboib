@@ -125,4 +125,33 @@ describe("parseDocList", () => {
     const docs = parseDocList(html, 0, "https://www.caib.es", "https://www.caib.es");
     expect(docs).toEqual([]);
   });
+
+  it("creates separate DocListItem for each PDF link in single resolucions", () => {
+    const html = `
+      <div class="llistat">
+        <ul class="resolucions">
+          <p>Multiple resolutions batch</p>
+          <p class="registre">REG 456 - 2024</p>
+          <a href="/eboibfront/pdf/456">PDF 1</a>
+          <a href="/doc/456">HTML 1</a>
+          <a href="/eboibfront/pdf/789">PDF 2</a>
+          <a href="/doc/789">HTML 2</a>
+        </ul>
+      </div>
+    `;
+    const docs = parseDocList(html, 0, "https://www.caib.es", "https://www.caib.es");
+    expect(docs).toHaveLength(2);
+    expect(docs[0]).toMatchObject({
+      id: "456",
+      description: "Multiple resolutions batch",
+      downloadPdfLink: "https://www.caib.es/eboibfront/pdf/456",
+      htmlLink: "https://www.caib.es/doc/456",
+    });
+    expect(docs[1]).toMatchObject({
+      id: "456",
+      description: "Multiple resolutions batch",
+      downloadPdfLink: "https://www.caib.es/eboibfront/pdf/789",
+      htmlLink: "https://www.caib.es/doc/789",
+    });
+  });
 });
