@@ -10,10 +10,8 @@ export function matchKeywords(docs: DocListItem[], words: string[]): DocListItem
   });
 
   if (filtered.length === 0) {
-    console.log("No documents found matching these search criteria\n");
     return [];
   }
 
-  console.log(`${filtered.length} BOIBs found`);
   return filtered;
 }

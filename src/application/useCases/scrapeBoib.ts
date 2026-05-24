@@ -77,6 +77,12 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   const allDocs = sections.flatMap((s) => s.docList);
   const filteredDocs = matchKeywords(allDocs, config.wordsToSearch);
 
+  if (filteredDocs.length === 0) {
+    logger.info("No documents found matching these search criteria");
+  } else {
+    logger.info(`${filteredDocs.length} BOIBs found`);
+  }
+
   const downloadedPdfPaths: string[] = [];
   let numMatches = 0;
   let emailSent = false;
