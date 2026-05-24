@@ -52,6 +52,10 @@ Security scan: TruffleHog + CodeQL (push/PR/weekly).
 Runs on staged .ts files: `tsc --noEmit` then `biome check --staged`.
 Bypass with `git commit --no-verify`.
 
+## Pre-push Hook
+
+Blocks direct pushes to `main`. Always use a feature branch + PR.
+
 ## Environment
 
 Enforced by code at startup via `loadConfig()`. Required: `ZOHO_USER`, `ZOHO_PASSWORD`, `WORDTOSEARCH_1`.
