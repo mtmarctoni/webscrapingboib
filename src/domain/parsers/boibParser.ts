@@ -107,12 +107,12 @@ export function parseDocList(
   const $docList = cheerio.load(llistatElement.prop("outerHTML") ?? "<div></div>");
 
   $docList("ul.resolucions").each((_j, elems) => {
-    const docListObject: DocListItem = {
-      id: "",
-      htmlLink: "",
-      description: "",
-      downloadPdfLink: "",
-    };
+    const pdfEntries: Array<{
+      link: string;
+      id: string;
+      description: string;
+    }> = [];
+    const htmlLinks: string[] = [];
 
     $docList(elems)
       .find("a")
@@ -135,17 +135,20 @@ export function parseDocList(
           const id = idText.split("-")[0]?.split(" ").reverse()[1] ?? "";
           const fullLink = domainUrl + link;
 
-          docListObject.downloadPdfLink = fullLink;
-          docListObject.description = description;
-          docListObject.id = id;
+          pdfEntries.push({ link: fullLink, id, description });
         } else if (!link.endsWith("xml") && !link.endsWith("rdf")) {
           const safeLink = link.startsWith("/") ? domainUrl + link : link;
-          docListObject.htmlLink = safeLink;
+          htmlLinks.push(safeLink);
         }
       });
 
-    if (docListObject.id || docListObject.description) {
-      docs.push(docListObject);
+    for (const [i, entry] of pdfEntries.entries()) {
+      docs.push({
+        id: entry.id,
+        description: entry.description,
+        downloadPdfLink: entry.link,
+        htmlLink: htmlLinks[i] ?? "",
+      });
     }
   });
 

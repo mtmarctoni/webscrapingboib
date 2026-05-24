@@ -11,6 +11,21 @@ import type { Logger } from "../../infrastructure/logger.js";
 import type { FileSystem } from "../../infrastructure/storage/fileSystem.js";
 import { buildDownloadFolderName, resolveSafePath } from "../../infrastructure/storage/paths.js";
 
+function assertString(value: unknown, context: string): string {
+  if (typeof value !== "string") {
+    throw new Error(`Expected string response from ${context}, got ${typeof value}`);
+  }
+  return value;
+}
+
+function isValidBoibState(state: unknown): state is BoibState {
+  return (
+    typeof state === "object" &&
+    state !== null &&
+    typeof (state as BoibState).linkUltimoBoletin === "string"
+  );
+}
+
 export interface Dependencies {
   http: HttpClient;
   fs: FileSystem;
@@ -23,13 +38,13 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
   // Load previous state
   logger.info("Loading previous state...");
-  const previousState = (await fs.readJson<BoibState>(config.stateFile)) ?? createEmptyBoibState();
-  const state = createEmptyBoibState();
+  const raw = await fs.readJson<BoibState>(config.stateFile);
+  const previousState = isValidBoibState(raw) ? raw : createEmptyBoibState();
 
   // Fetch latest BOIB
   logger.info("Fetching latest BOIB info");
   const bulletinRes = await http.get(config.baseUrl);
-  const meta = parseBulletin(bulletinRes.data as string, config.baseUrl);
+  const meta = parseBulletin(assertString(bulletinRes.data, "BOIB bulletin page"), config.baseUrl);
 
   // Check if new
   if (meta.linkUltimoBoletin === previousState.linkUltimoBoletin) {
@@ -49,12 +64,15 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   logger.info(meta.ultimoBoletin);
 
   // Populate state with bulletin metadata
-  Object.assign(state, meta);
+  const state: BoibState = {
+    ...createEmptyBoibState(),
+    ...meta,
+  };
 
   // Fetch section links
   const sectionRes = await http.get(state.linkUltimoBoletin);
   const { sections, isExtraordinary } = parseSectionMenu(
-    sectionRes.data as string,
+    assertString(sectionRes.data, "BOIB section menu"),
     config.allowedDomain,
   );
   state.isExtraordinary = isExtraordinary;
@@ -64,7 +82,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   for (const section of sections) {
     const docRes = await http.get(section.link);
     const docs = parseDocList(
-      docRes.data as string,
+      assertString(docRes.data, "BOIB doc list"),
       section.id,
       config.allowedDomain,
       config.allowedDomain,
@@ -132,8 +150,9 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
           downloadedPdfPaths.push(`${folderPath}/${file}`);
         }
       }
-    } catch {
-      // Folder might be empty or not exist
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn(`Could not list files in download folder: ${message}`);
     }
 
     // Match customers in HTML docs
@@ -144,7 +163,11 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       try {
         const res = await http.get(link);
         const doc = filteredDocs.find((d) => d.htmlLink === link);
-        const matches = matchCustomers(res.data as string, config.customers, doc?.id ?? "");
+        const matches = matchCustomers(
+          assertString(res.data, "BOIB HTML doc"),
+          config.customers,
+          doc?.id ?? "",
+        );
         for (const match of matches) {
           const matchStr = `PDF ${match.docId} -> Table ${match.tableIndex}, row ${match.rowIndex}, cell ${match.cellIndex}: ${match.cellText}`;
           state.customersMatched.push(matchStr);

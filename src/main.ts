@@ -24,6 +24,17 @@ async function main(): Promise<void> {
   const email = createEmailTransport(config);
   const logger = createLogger();
 
+  if (config.sendEmail) {
+    try {
+      await email.verify();
+      logger.info("SMTP connection verified");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error(`SMTP verification failed: ${message}`);
+      logger.error("Email sending may fail. Check your SMTP credentials.");
+    }
+  }
+
   const result = await runScrapePipeline(config, { http, fs, email, logger });
 
   console.log("----------");

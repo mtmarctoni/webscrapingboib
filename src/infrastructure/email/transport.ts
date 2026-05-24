@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import type { AppConfig } from "../../config/environment.js";
 
 export interface EmailTransport {
+  verify(): Promise<void>;
   send(options: {
     from: string;
     to: string;
@@ -24,6 +25,9 @@ export function createEmailTransport(config: AppConfig): EmailTransport {
   });
 
   return {
+    async verify(): Promise<void> {
+      await transporter.verify();
+    },
     async send(options) {
       await transporter.sendMail(options);
     },

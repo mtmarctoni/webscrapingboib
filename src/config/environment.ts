@@ -104,7 +104,7 @@ export function loadConfig(): AppConfig {
     allowedDomain: ALLOWED_DOMAIN,
     wordsToSearch: collectEnvVars("WORDTOSEARCH", 9),
     customers: collectEnvVars("CUSTOMER", 7),
-    sendEmail: process.env.SEND_EMAIL !== "false",
+    sendEmail: process.env.SEND_EMAIL === "true",
     stateFile: DEFAULT_STATE_FILE,
     pdfDownloadFolder: PDF_DOWNLOAD_FOLDER,
     httpTimeout: HTTP_TIMEOUT,
