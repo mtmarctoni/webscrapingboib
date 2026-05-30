@@ -9,6 +9,7 @@ export interface EmailTransport {
     to: string;
     subject: string;
     text: string;
+    html?: string;
     attachments: { filename: string; path: string }[];
   }): Promise<void>;
 }
