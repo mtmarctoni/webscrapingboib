@@ -1,4 +1,4 @@
-import type { ScrapeResult } from "../../domain/models/boib.js";
+import type { DocListItem, ScrapeResult } from "../../domain/models/boib.js";
 
 function sanitizeForEmail(text: string): string {
   return text.replace(/[\r\n]/g, " ").trim();
@@ -41,6 +41,7 @@ function composeHtmlBody(
   config: {
     wordsToSearch: string[];
     customers: string[];
+    matchedDocs: DocListItem[];
   },
 ): string {
   const rows: string[] = [];
@@ -84,17 +85,15 @@ function composeHtmlBody(
 </tr>
 </thead>
 <tbody>`);
-    for (const [i, section] of result.state.sectionLinks.entries()) {
-      for (const [j, doc] of section.docList.entries()) {
-        rows.push(`<tr style="border-bottom: 1px solid #eee;">
-<td style="padding: 8px 12px; vertical-align: top; color: #999; font-size: 12px;">${i + 1}-${j + 1}</td>
+    for (const [i, doc] of config.matchedDocs.entries()) {
+      rows.push(`<tr style="border-bottom: 1px solid #eee;">
+<td style="padding: 8px 12px; vertical-align: top; color: #999; font-size: 12px;">${i + 1}</td>
 <td style="padding: 8px 12px; vertical-align: top;">${escapeHtml(doc.description)}</td>
 <td style="padding: 8px 12px; vertical-align: top; white-space: nowrap;">
 ${doc.downloadPdfLink ? `<a href="${escapeHtml(doc.downloadPdfLink)}" style="color: #2563eb; text-decoration: none; margin-right: 8px;">PDF</a>` : ""}
 ${doc.htmlLink ? `<a href="${escapeHtml(doc.htmlLink)}" style="color: #2563eb; text-decoration: none;">HTML</a>` : ""}
 </td>
 </tr>`);
-      }
     }
     rows.push(`</tbody>
 </table>`);
@@ -118,6 +117,7 @@ export function composeEmail(
     smtp: { user: string; recipients: string[] };
     wordsToSearch: string[];
     customers: string[];
+    matchedDocs: DocListItem[];
   },
 ): EmailContent {
   let emailBody = `\nAuto-generated notification.\n`;
@@ -161,7 +161,11 @@ export function composeEmail(
     to: config.smtp.recipients.join(", "),
     subject: `[NUEVO BOIB] ${sanitizeForEmail(result.state.ultimoBoletin)}`,
     text: emailBody,
-    html: composeHtmlBody(result, config),
+    html: composeHtmlBody(result, {
+      wordsToSearch: config.wordsToSearch,
+      customers: config.customers,
+      matchedDocs: config.matchedDocs,
+    }),
     attachments,
   };
 }

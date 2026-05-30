@@ -232,6 +232,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       smtp: config.smtp,
       wordsToSearch: config.wordsToSearch,
       customers: config.customers,
+      matchedDocs: filteredDocs,
     });
     logger.info(`Sending email to ${config.smtp.recipients.join(", ")}`);
     await email.send(mail);
