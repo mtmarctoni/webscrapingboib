@@ -57,19 +57,18 @@ function validateEmailFormat(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function collectEnvVars(prefix: string, max: number): string[] {
-  const result: string[] = [];
-  for (let i = 1; i <= max; i++) {
-    const value = process.env[`${prefix}_${i}`];
-    if (value && value.trim() !== "") {
-      result.push(value.trim());
-    }
+function splitCommaList(value: string | undefined): string[] {
+  if (!value || value.trim() === "") {
+    return [];
   }
-  return result;
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item !== "");
 }
 
 export function loadConfig(): AppConfig {
-  const requiredVars = ["ZOHO_USER", "ZOHO_PASSWORD", "WORDTOSEARCH_1"];
+  const requiredVars = ["ZOHO_USER", "ZOHO_PASSWORD", "WORDSTOSEARCH"];
   const missing: string[] = [];
 
   for (const varName of requiredVars) {
@@ -87,7 +86,7 @@ export function loadConfig(): AppConfig {
     console.warn(`Warning: ZOHO_USER does not appear to be a valid email address: ${emailUser}`);
   }
 
-  const recipients = collectEnvVars("RECIPIENT", 3).filter((r) => {
+  const recipients = splitCommaList(process.env.RECIPIENTS).filter((r) => {
     if (!validateEmailFormat(r)) {
       console.warn(`Warning: Invalid email format for recipient: ${r}`);
       return false;
@@ -102,8 +101,8 @@ export function loadConfig(): AppConfig {
   return {
     baseUrl: BASE_URL,
     allowedDomain: ALLOWED_DOMAIN,
-    wordsToSearch: collectEnvVars("WORDTOSEARCH", 9),
-    customers: collectEnvVars("CUSTOMER", 7),
+    wordsToSearch: splitCommaList(process.env.WORDSTOSEARCH),
+    customers: splitCommaList(process.env.CUSTOMERS),
     sendEmail: process.env.SEND_EMAIL === "true",
     stateFile: DEFAULT_STATE_FILE,
     pdfDownloadFolder: PDF_DOWNLOAD_FOLDER,
