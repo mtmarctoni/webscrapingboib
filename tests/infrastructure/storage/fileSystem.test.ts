@@ -1,6 +1,16 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import fs from "node:fs/promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppConfig } from "../../../src/config/environment.js";
 import { createFileSystem } from "../../../src/infrastructure/storage/fileSystem.js";
+
+vi.mock("node:fs/promises", () => ({
+  default: {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    mkdir: vi.fn(),
+    readdir: vi.fn(),
+  },
+}));
 
 function makeConfig(): AppConfig {
   return {} as AppConfig;
@@ -62,5 +72,53 @@ describe("validatePdf", () => {
 
   it("rejects empty buffer", () => {
     expect(fs.validatePdf(Buffer.alloc(0))).toBe(false);
+  });
+});
+
+describe("readJson", () => {
+  let fileSystem: ReturnType<typeof createFileSystem>;
+
+  beforeEach(() => {
+    fileSystem = createFileSystem(makeConfig());
+    vi.resetAllMocks();
+  });
+
+  it("returns parsed JSON for valid file", async () => {
+    vi.mocked(fs.readFile).mockResolvedValue('{"key": "value"}');
+    const result = await fileSystem.readJson("/tmp/test.json");
+    expect(result).toEqual({ key: "value" });
+  });
+
+  it("returns null for missing file (ENOENT)", async () => {
+    const err = new Error("ENOENT") as NodeJS.ErrnoException;
+    err.code = "ENOENT";
+    vi.mocked(fs.readFile).mockRejectedValue(err);
+    const result = await fileSystem.readJson("/tmp/missing.json");
+    expect(result).toBeNull();
+  });
+
+  it("returns null for corrupted JSON (SyntaxError)", async () => {
+    vi.mocked(fs.readFile).mockResolvedValue("{invalid json");
+    const result = await fileSystem.readJson("/tmp/corrupt.json");
+    expect(result).toBeNull();
+  });
+
+  it("returns null for empty file", async () => {
+    vi.mocked(fs.readFile).mockResolvedValue("");
+    const result = await fileSystem.readJson("/tmp/empty.json");
+    expect(result).toBeNull();
+  });
+
+  it("returns null for whitespace-only file", async () => {
+    vi.mocked(fs.readFile).mockResolvedValue("   \n  ");
+    const result = await fileSystem.readJson("/tmp/whitespace.json");
+    expect(result).toBeNull();
+  });
+
+  it("rethrows non-ENOENT, non-SyntaxError errors", async () => {
+    const err = new Error("Permission denied") as NodeJS.ErrnoException;
+    err.code = "EACCES";
+    vi.mocked(fs.readFile).mockRejectedValue(err);
+    await expect(fileSystem.readJson("/tmp/locked.json")).rejects.toThrow("Permission denied");
   });
 });

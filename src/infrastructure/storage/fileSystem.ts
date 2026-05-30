@@ -22,6 +22,9 @@ export function createFileSystem(_config: AppConfig): FileSystem {
         }
         return JSON.parse(content) as T;
       } catch (err: unknown) {
+        if (err instanceof SyntaxError) {
+          return null;
+        }
         if (
           err instanceof Error &&
           "code" in err &&
