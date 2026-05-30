@@ -26,6 +26,17 @@ function isValidBoibState(state: unknown): state is BoibState {
   );
 }
 
+async function withConcurrencyLimit<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += limit) {
+    const batch = items.slice(i, i + limit);
+    await Promise.allSettled(batch.map(fn));
+  }
+}
+
 export interface Dependencies {
   http: HttpClient;
   fs: FileSystem;
@@ -78,17 +89,19 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   state.isExtraordinary = isExtraordinary;
   logger.info(isExtraordinary ? "BOIB Extraordinari" : "BOIB ordinari");
 
-  // Fetch doc lists for each section
-  for (const section of sections) {
-    const docRes = await http.get(section.link);
-    const docs = parseDocList(
-      assertString(docRes.data, "BOIB doc list"),
-      section.id,
-      config.allowedDomain,
-      config.allowedDomain,
-    );
-    section.docList = docs;
-  }
+  // Fetch doc lists for each section concurrently
+  await Promise.allSettled(
+    sections.map(async (section) => {
+      const docRes = await http.get(section.link);
+      const docs = parseDocList(
+        assertString(docRes.data, "BOIB doc list"),
+        section.id,
+        config.allowedDomain,
+        config.allowedDomain,
+      );
+      section.docList = docs;
+    }),
+  );
   state.sectionLinks = sections;
 
   // Match keywords across all docs
@@ -120,66 +133,55 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
     const spinner = logger.spinner(`Downloading PDFs to:\n${folderPath}`);
     spinner.start();
 
-    for (const link of pdfLinks) {
+    await withConcurrencyLimit(pdfLinks, 5, async (link) => {
       try {
         const data = await http.getBuffer(link, config.maxPdfSize);
         if (!fs.validatePdf(data)) {
-          spinner.warn(`Skipping non-PDF content from ${link}`);
-          continue;
+          logger.warn(`Skipping non-PDF content from ${link}`);
+          return;
         }
         const baseName = link.split("/").pop() || `boib_${Date.now()}`;
         const fileName = baseName.endsWith(".pdf") ? baseName : `${baseName}.pdf`;
         const filePath = resolveSafePath(folderPath, fileName);
         if (!filePath) {
-          spinner.warn(`Skipping potentially unsafe path: ${fileName}`);
-          continue;
+          logger.warn(`Skipping potentially unsafe path: ${fileName}`);
+          return;
         }
         await fs.writeFile(filePath, data);
-        spinner.text = `Downloaded ${fileName}`;
+        downloadedPdfPaths.push(filePath);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        spinner.warn(`Failed to download ${link}: ${message}`);
+        logger.warn(`Failed to download ${link}: ${message}`);
       }
-    }
+    });
     spinner.succeed("Download completed");
 
-    // Collect downloaded paths
-    try {
-      const files = await fs.readdir(folderPath);
-      for (const file of files) {
-        if (file.endsWith(".pdf")) {
-          downloadedPdfPaths.push(`${folderPath}/${file}`);
-        }
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      logger.warn(`Could not list files in download folder: ${message}`);
-    }
-
-    // Match customers in HTML docs
+    // Match customers in HTML docs concurrently
     logger.info(
       `Looking for ${config.customers.length} customer(s) in ${htmlLinks.length} document(s)`,
     );
-    for (const link of htmlLinks) {
-      try {
-        const res = await http.get(link);
-        const doc = filteredDocs.find((d) => d.htmlLink === link);
-        const matches = matchCustomers(
-          assertString(res.data, "BOIB HTML doc"),
-          config.customers,
-          doc?.id ?? "",
-        );
-        for (const match of matches) {
-          const matchStr = `PDF ${match.docId} -> Table ${match.tableIndex}, row ${match.rowIndex}, cell ${match.cellIndex}: ${match.cellText}`;
-          state.customersMatched.push(matchStr);
-          logger.info(`Match found: ${matchStr}`);
-          numMatches++;
+    await Promise.allSettled(
+      htmlLinks.map(async (link) => {
+        try {
+          const res = await http.get(link);
+          const doc = filteredDocs.find((d) => d.htmlLink === link);
+          const matches = matchCustomers(
+            assertString(res.data, "BOIB HTML doc"),
+            config.customers,
+            doc?.id ?? "",
+          );
+          for (const match of matches) {
+            const matchStr = `PDF ${match.docId} -> Table ${match.tableIndex}, row ${match.rowIndex}, cell ${match.cellIndex}: ${match.cellText}`;
+            state.customersMatched.push(matchStr);
+            logger.info(`Match found: ${matchStr}`);
+            numMatches++;
+          }
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          logger.error(`Error fetching ${link}: ${message}`);
         }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        logger.error(`Error fetching ${link}: ${message}`);
-      }
-    }
+      }),
+    );
     logger.info(`Found ${numMatches} match(es)`);
   }
 
