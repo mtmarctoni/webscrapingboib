@@ -124,7 +124,7 @@ describe("parseDocList", () => {
         </ul>
       </div>
     `;
-    const docs = parseDocList(html, 0, "https://www.caib.es", "https://www.caib.es");
+    const docs = parseDocList(html, "https://www.caib.es");
     expect(docs).toHaveLength(1);
     expect(docs[0]).toMatchObject({
       id: "123",
@@ -136,7 +136,7 @@ describe("parseDocList", () => {
 
   it("returns empty array when no llistat element found", () => {
     const html = `<div>No docs here</div>`;
-    const docs = parseDocList(html, 0, "https://www.caib.es", "https://www.caib.es");
+    const docs = parseDocList(html, "https://www.caib.es");
     expect(docs).toEqual([]);
   });
 
@@ -153,7 +153,7 @@ describe("parseDocList", () => {
         </ul>
       </div>
     `;
-    const docs = parseDocList(html, 0, "https://www.caib.es", "https://www.caib.es");
+    const docs = parseDocList(html, "https://www.caib.es");
     expect(docs).toHaveLength(2);
     expect(docs[0]).toMatchObject({
       id: "456",

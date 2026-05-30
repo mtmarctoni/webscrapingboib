@@ -96,12 +96,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   await Promise.allSettled(
     sections.map(async (section) => {
       const docRes = await http.get(section.link);
-      const docs = parseDocList(
-        assertString(docRes.data, "BOIB doc list"),
-        section.id,
-        config.allowedDomain,
-        config.allowedDomain,
-      );
+      const docs = parseDocList(assertString(docRes.data, "BOIB doc list"), config.allowedDomain);
       section.docList = docs;
     }),
   );
