@@ -104,12 +104,27 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
   // Match keywords across all docs
   const allDocs = sections.flatMap((s) => s.docList);
-  const filteredDocs = matchKeywords(allDocs, config.wordsToSearch);
+  const matchedDocs = matchKeywords(allDocs, config.wordsToSearch);
+  const seen = new Set<string>();
+  const filteredDocs = matchedDocs.filter((doc) => {
+    if (doc.downloadPdfLink) {
+      if (seen.has(doc.downloadPdfLink)) {
+        return false;
+      }
+      seen.add(doc.downloadPdfLink);
+    }
+    return true;
+  });
 
   if (filteredDocs.length === 0) {
     logger.info("No documents found matching these search criteria");
   } else {
-    logger.info(`${filteredDocs.length} BOIBs found`);
+    const deduped = matchedDocs.length - filteredDocs.length;
+    if (deduped > 0) {
+      logger.info(`${filteredDocs.length} unique BOIBs found (${deduped} duplicates removed)`);
+    } else {
+      logger.info(`${filteredDocs.length} BOIBs found`);
+    }
   }
 
   const downloadedPdfPaths: string[] = [];
