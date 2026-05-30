@@ -29,6 +29,7 @@ export interface AppConfig {
   wordsToSearch: string[];
   customers: string[];
   sendEmail: boolean;
+  notifyNoMatch: boolean;
   stateFile: string;
   pdfDownloadFolder: string;
   httpTimeout: number;
@@ -104,6 +105,7 @@ export function loadConfig(): AppConfig {
     wordsToSearch: splitCommaList(process.env.WORDSTOSEARCH),
     customers: splitCommaList(process.env.CUSTOMERS),
     sendEmail: process.env.SEND_EMAIL === "true",
+    notifyNoMatch: process.env.NOTIFY_NO_MATCH === "true",
     stateFile: DEFAULT_STATE_FILE,
     pdfDownloadFolder: PDF_DOWNLOAD_FOLDER,
     httpTimeout: HTTP_TIMEOUT,
