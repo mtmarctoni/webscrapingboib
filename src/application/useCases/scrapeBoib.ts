@@ -50,6 +50,9 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   // Load previous state
   logger.info("Loading previous state...");
   const raw = await fs.readJson<BoibState>(config.stateFile);
+  if (raw === null) {
+    logger.warn("Previous state not found or corrupted. Starting from empty state.");
+  }
   const previousState = isValidBoibState(raw) ? raw : createEmptyBoibState();
 
   // Fetch latest BOIB
