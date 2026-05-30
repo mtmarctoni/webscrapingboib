@@ -1,6 +1,6 @@
 import type { AppConfig } from "../../config/environment.js";
 import { matchCustomers } from "../../domain/matchers/customerMatcher.js";
-import { matchKeywords } from "../../domain/matchers/keywordMatcher.js";
+import { matchKeywords, parseKeywords } from "../../domain/matchers/keywordMatcher.js";
 import type { BoibState, ScrapeResult } from "../../domain/models/boib.js";
 import { createEmptyBoibState } from "../../domain/models/boib.js";
 import { parseBulletin, parseDocList, parseSectionMenu } from "../../domain/parsers/boibParser.js";
@@ -104,7 +104,8 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
   // Match keywords across all docs
   const allDocs = sections.flatMap((s) => s.docList);
-  const matchedDocs = matchKeywords(allDocs, config.wordsToSearch);
+  const keywords = parseKeywords(config.wordsToSearch);
+  const matchedDocs = matchKeywords(allDocs, keywords);
   const seen = new Set<string>();
   const filteredDocs = matchedDocs.filter((doc) => {
     if (doc.downloadPdfLink) {
