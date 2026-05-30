@@ -62,6 +62,18 @@ describe("matchKeywords", () => {
       description: "Subvenció per IA i automatització",
       downloadPdfLink: "",
     },
+    {
+      id: "7",
+      htmlLink: "",
+      description: "Subvenció per a projectes digitals",
+      downloadPdfLink: "",
+    },
+    {
+      id: "8",
+      htmlLink: "",
+      description: "Ajudes per a la transformació digital",
+      downloadPdfLink: "",
+    },
   ];
 
   it("returns docs matching any OR keyword (case-insensitive)", () => {
@@ -123,5 +135,21 @@ describe("matchKeywords", () => {
   it("single AND keyword behaves like OR", () => {
     const result = matchKeywords(docs, parseKeywords(["+alpha"]));
     expect(result).toHaveLength(2);
+  });
+
+  it("matches accented description with unaccented keyword (accent normalization)", () => {
+    const result = matchKeywords(docs, parseKeywords(["subvencio"]));
+    expect(result).toHaveLength(2);
+  });
+
+  it("matches unaccented description with accented keyword", () => {
+    const result = matchKeywords(docs, parseKeywords(["transformació"]));
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("8");
+  });
+
+  it("matches mixed accents", () => {
+    const result = matchKeywords(docs, parseKeywords(["Subvenció", "ajudes"]));
+    expect(result).toHaveLength(3);
   });
 });

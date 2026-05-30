@@ -159,4 +159,38 @@ describe("matchCustomers", () => {
     expect(match0).toMatchObject({ cellIndex: 1, customer: "Alice" });
     expect(match1).toMatchObject({ cellIndex: 2, customer: "Bob" });
   });
+
+  it("matches accented cell text with unaccented customer name", () => {
+    const html = `
+      <table>
+        <tr>
+          <td>Pérez & Asociados SL</td>
+        </tr>
+      </table>
+    `;
+    const result = matchCustomers(html, ["Perez"], "doc-1");
+    expect(result).toHaveLength(1);
+    const match = result[0] as CustomerMatch;
+    expect(match).toMatchObject({
+      customer: "Perez",
+      cellText: "Pérez & Asociados SL",
+    });
+  });
+
+  it("matches unaccented cell text with accented customer name", () => {
+    const html = `
+      <table>
+        <tr>
+          <td>Garcia Martinez SL</td>
+        </tr>
+      </table>
+    `;
+    const result = matchCustomers(html, ["García"], "doc-1");
+    expect(result).toHaveLength(1);
+    const match = result[0] as CustomerMatch;
+    expect(match).toMatchObject({
+      customer: "García",
+      cellText: "Garcia Martinez SL",
+    });
+  });
 });

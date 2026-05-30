@@ -1,4 +1,5 @@
 import type { DocListItem } from "../models/boib.js";
+import { normalize } from "./normalize.js";
 
 export type Keyword =
   | { type: "or"; value: string }
@@ -51,18 +52,17 @@ export function matchKeywords(docs: DocListItem[], keywords: Keyword[]): DocList
   const phraseKeywords = keywords.filter((k) => k.type === "phrase");
 
   const filtered = docs.filter((doc) => {
-    const description = doc.description.toLowerCase();
+    const description = normalize(doc.description);
 
     const orMatch =
-      orKeywords.length > 0 && orKeywords.some((k) => description.includes(k.value.toLowerCase()));
+      orKeywords.length > 0 && orKeywords.some((k) => description.includes(normalize(k.value)));
 
     const andMatch =
-      andKeywords.length > 0 &&
-      andKeywords.every((k) => description.includes(k.value.toLowerCase()));
+      andKeywords.length > 0 && andKeywords.every((k) => description.includes(normalize(k.value)));
 
     const phraseMatch =
       phraseKeywords.length > 0 &&
-      phraseKeywords.some((k) => description.includes(k.value.toLowerCase()));
+      phraseKeywords.some((k) => description.includes(normalize(k.value)));
 
     return orMatch || andMatch || phraseMatch;
   });
