@@ -1,10 +1,11 @@
 import path from "node:path";
 
 export function sanitizePathSegment(segment: string): string {
-  return segment
-    .replace(/\.\./g, "")
-    .replace(/[<>:"|?*]/g, "_")
-    .replace(/\0/g, "");
+  let sanitized = segment.replace(/[<>:"|?*]/g, "_").replace(/\0/g, "");
+  while (sanitized.includes("..")) {
+    sanitized = sanitized.replace(/\.\./g, "");
+  }
+  return sanitized;
 }
 
 export function buildDownloadFolderName(
