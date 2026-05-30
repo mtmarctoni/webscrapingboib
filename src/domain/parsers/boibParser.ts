@@ -114,17 +114,10 @@ export function parseSectionMenu(html: string, domainUrl: string): SectionMenuRe
  * Parses the document list HTML to extract individual document items with
  * their PDF download links and descriptions.
  * @param html - The HTML content of the document list page
- * @param _sectionId - Section identifier (unused, reserved for future use)
  * @param domainUrl - The domain URL for constructing absolute document links
- * @param _allowedDomain - Allowed domain for link filtering (unused, reserved for future use)
  * @returns Array of parsed document list items
  */
-export function parseDocList(
-  html: string,
-  _sectionId: number,
-  domainUrl: string,
-  _allowedDomain: string,
-): DocListItem[] {
+export function parseDocList(html: string, domainUrl: string): DocListItem[] {
   const $ = cheerio.load(html);
   const docs: DocListItem[] = [];
   const llistatElement = $(".llistat");
