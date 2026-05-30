@@ -24,6 +24,20 @@ function isAllowedUrl(link: string, allowedDomain: string): boolean {
   }
 }
 
+function isRetryableError(err: unknown): boolean {
+  if (!axios.isAxiosError(err)) {
+    // Non-Axios errors (network, DNS, timeouts) are retryable
+    return true;
+  }
+  if (err.response) {
+    const status = err.response.status;
+    // Retry on 5xx server errors; do not retry on 4xx client errors
+    return status >= 500 && status < 600;
+  }
+  // No response means network-level error (timeout, connection refused) - retry
+  return true;
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
@@ -35,6 +49,9 @@ async function withRetry<T>(
       return await fn();
     } catch (err: unknown) {
       lastError = err instanceof Error ? err : new Error(String(err));
+      if (!isRetryableError(err)) {
+        throw new HttpError(`Request failed: ${lastError.message}`);
+      }
       if (attempt < maxRetries) {
         console.warn(`Attempt ${attempt} failed. Retrying in ${delayMs}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delayMs));
