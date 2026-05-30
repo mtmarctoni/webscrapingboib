@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { normalize } from "./normalize.js";
 
 /**
  * Represents a customer name found within an HTML table cell.
@@ -38,8 +39,9 @@ export function matchCustomers(
       const cells = $(row).find("td");
       cells.each((cellIdx, cell) => {
         const cellText = $(cell).text();
+        const normalizedCellText = normalize(cellText);
         for (const customer of customers) {
-          if (cellText.toLowerCase().includes(customer.toLowerCase())) {
+          if (normalizedCellText.includes(normalize(customer))) {
             matches.push({
               docId,
               tableIndex: tableIdx + 1,
