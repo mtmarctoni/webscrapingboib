@@ -5,12 +5,6 @@ export type Keyword =
   | { type: "and"; value: string }
   | { type: "phrase"; value: string };
 
-function _valueForDisplay(k: Keyword): string {
-  if (k.type === "or") return k.value;
-  if (k.type === "and") return `+${k.value}`;
-  return `phrase:${k.value}`;
-}
-
 /**
  * Parses raw keyword strings into typed Keyword objects.
  *
