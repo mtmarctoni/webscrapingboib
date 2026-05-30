@@ -10,6 +10,7 @@ describe("createHttpClient", () => {
     wordsToSearch: ["test"],
     customers: [],
     sendEmail: false,
+    notifyNoMatch: false,
     stateFile: "state.json",
     pdfDownloadFolder: "pdfs",
     httpTimeout: 5000,

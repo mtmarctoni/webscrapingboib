@@ -4,7 +4,7 @@ import { matchKeywords, parseKeywords } from "../../domain/matchers/keywordMatch
 import type { BoibState, ScrapeResult } from "../../domain/models/boib.js";
 import { createEmptyBoibState } from "../../domain/models/boib.js";
 import { parseBulletin, parseDocList, parseSectionMenu } from "../../domain/parsers/boibParser.js";
-import { composeEmail } from "../../infrastructure/email/template.js";
+import { composeEmail, composeNoNewBoibEmail } from "../../infrastructure/email/template.js";
 import type { EmailTransport } from "../../infrastructure/email/transport.js";
 import type { HttpClient } from "../../infrastructure/http/client.js";
 import type { Logger } from "../../infrastructure/logger.js";
@@ -64,13 +64,26 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   if (meta.linkUltimoBoletin === previousState.linkUltimoBoletin) {
     logger.info("No new BOIB available");
     logger.info(`${meta.ultimoBoletin}\n`);
+
+    let emailSent = false;
+
+    if (config.sendEmail && config.notifyNoMatch && config.smtp.recipients.length > 0) {
+      const mail = composeNoNewBoibEmail(
+        { smtp: config.smtp },
+        previousState.ultimoBoletin || meta.ultimoBoletin,
+      );
+      logger.info(`Sending no-new-BOIB notification to ${config.smtp.recipients.join(", ")}`);
+      await email.send(mail);
+      emailSent = true;
+    }
+
     logger.info("Exiting...");
     return {
       success: true,
       state: { ...previousState, ultimoBoletin: meta.ultimoBoletin },
       downloadedPdfPaths: [],
       numMatches: 0,
-      emailSent: false,
+      emailSent,
     };
   }
 

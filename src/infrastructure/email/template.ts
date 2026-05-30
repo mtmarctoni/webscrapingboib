@@ -12,6 +12,21 @@ export interface EmailContent {
   attachments: { filename: string; path: string }[];
 }
 
+export function composeNoNewBoibEmail(
+  config: {
+    smtp: { user: string; recipients: string[] };
+  },
+  lastChecked: string,
+): EmailContent {
+  return {
+    from: config.smtp.user,
+    to: config.smtp.recipients.join(", "),
+    subject: `[BOIB] No new issues available`,
+    text: `\nAuto-generated notification.\n\nNo new BOIB available.\nLast checked: ${sanitizeForEmail(lastChecked)}\nThe scraper will check again on the next run.\n\nHave a good day.\n\nMarc de DocsEE\nDocumentacion Eficiente y Eficaz\n`,
+    attachments: [],
+  };
+}
+
 export function composeEmail(
   result: ScrapeResult,
   config: {
