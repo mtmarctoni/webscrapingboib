@@ -140,6 +140,72 @@ describe("parseDocList", () => {
     expect(docs).toEqual([]);
   });
 
+  it("handles PDF without a matching HTML link (misalignment scenario)", () => {
+    const html = `
+      <div class="llistat">
+        <ul class="resolucions">
+          <p>Resolution with PDF only</p>
+          <p class="registre">REG 999 - 2024</p>
+          <a href="/eboibfront/pdf/999">PDF</a>
+        </ul>
+      </div>
+    `;
+    const docs = parseDocList(html, "https://www.caib.es");
+    expect(docs).toHaveLength(1);
+    expect(docs[0]).toMatchObject({
+      id: "999",
+      downloadPdfLink: "https://www.caib.es/eboibfront/pdf/999",
+      htmlLink: "",
+    });
+  });
+
+  it("skips orphan HTML links without a preceding PDF", () => {
+    const html = `
+      <div class="llistat">
+        <ul class="resolucions">
+          <p>HTML-only document</p>
+          <p class="registre">REG 111 - 2024</p>
+          <a href="/doc/111">HTML only</a>
+          <a href="/eboibfront/pdf/222">PDF</a>
+          <a href="/doc/222">HTML</a>
+        </ul>
+      </div>
+    `;
+    const docs = parseDocList(html, "https://www.caib.es");
+    expect(docs).toHaveLength(1);
+    expect(docs[0]).toMatchObject({
+      id: "111",
+      downloadPdfLink: "https://www.caib.es/eboibfront/pdf/222",
+      htmlLink: "https://www.caib.es/doc/222",
+    });
+  });
+
+  it("handles consecutive PDFs with no HTML between them", () => {
+    const html = `
+      <div class="llistat">
+        <ul class="resolucions">
+          <p>Two PDFs, one HTML</p>
+          <p class="registre">REG 333 - 2024</p>
+          <a href="/eboibfront/pdf/333">PDF 1</a>
+          <a href="/eboibfront/pdf/444">PDF 2</a>
+          <a href="/doc/444">HTML</a>
+        </ul>
+      </div>
+    `;
+    const docs = parseDocList(html, "https://www.caib.es");
+    expect(docs).toHaveLength(2);
+    expect(docs[0]).toMatchObject({
+      id: "333",
+      downloadPdfLink: "https://www.caib.es/eboibfront/pdf/333",
+      htmlLink: "",
+    });
+    expect(docs[1]).toMatchObject({
+      id: "333",
+      downloadPdfLink: "https://www.caib.es/eboibfront/pdf/444",
+      htmlLink: "https://www.caib.es/doc/444",
+    });
+  });
+
   it("creates separate DocListItem for each PDF link in single resolucions", () => {
     const html = `
       <div class="llistat">

@@ -129,47 +129,46 @@ export function parseDocList(html: string, domainUrl: string): DocListItem[] {
   const $docList = cheerio.load(llistatElement.prop("outerHTML") ?? "<div></div>");
 
   $docList("ul.resolucions").each((_j, elems) => {
-    const pdfEntries: Array<{
-      link: string;
-      id: string;
-      description: string;
-    }> = [];
-    const htmlLinks: string[] = [];
+    const description = $docList(elems).find("p").first().text();
+    const idText = $docList(elems).find("p.registre").first().text().trim();
+    const id = idText.split("-")[0]?.split(" ").reverse()[1] ?? "";
+
+    let pendingPdf = "";
 
     $docList(elems)
       .find("a")
       .each((_i, elem) => {
         const link = $docList(elem).attr("href") ?? "";
         if (link.startsWith("/eboibfront/pdf/")) {
-          const description = $docList(elem)
-            .parents("ul.resolucions")
-            .first()
-            .find("p")
-            .first()
-            .text();
-          const idText = $docList(elem)
-            .parents("ul.resolucions")
-            .first()
-            .find("p.registre")
-            .first()
-            .text()
-            .trim();
-          const id = idText.split("-")[0]?.split(" ").reverse()[1] ?? "";
-          const fullLink = domainUrl + link;
-
-          pdfEntries.push({ link: fullLink, id, description });
+          if (pendingPdf) {
+            docs.push({
+              id,
+              description,
+              downloadPdfLink: pendingPdf,
+              htmlLink: "",
+            });
+          }
+          pendingPdf = domainUrl + link;
         } else if (!link.endsWith("xml") && !link.endsWith("rdf")) {
           const safeLink = link.startsWith("/") ? domainUrl + link : link;
-          htmlLinks.push(safeLink);
+          if (pendingPdf) {
+            docs.push({
+              id,
+              description,
+              downloadPdfLink: pendingPdf,
+              htmlLink: safeLink,
+            });
+            pendingPdf = "";
+          }
         }
       });
 
-    for (const [i, entry] of pdfEntries.entries()) {
+    if (pendingPdf) {
       docs.push({
-        id: entry.id,
-        description: entry.description,
-        downloadPdfLink: entry.link,
-        htmlLink: htmlLinks[i] ?? "",
+        id,
+        description,
+        downloadPdfLink: pendingPdf,
+        htmlLink: "",
       });
     }
   });
