@@ -84,6 +84,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       downloadedPdfPaths: [],
       numMatches: 0,
       emailSent,
+      sectionErrors: [],
     };
   }
 
@@ -106,13 +107,21 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
   logger.info(isExtraordinary ? "BOIB Extraordinari" : "BOIB ordinari");
 
   // Fetch doc lists for each section concurrently
-  await Promise.allSettled(
+  const sectionErrors: Array<{ title: string; url: string; message: string }> = [];
+  const sectionResults = await Promise.allSettled(
     sections.map(async (section) => {
       const docRes = await http.get(section.link);
       const docs = parseDocList(assertString(docRes.data, "BOIB doc list"), config.allowedDomain);
       section.docList = docs;
     }),
   );
+  for (const [i, result] of sectionResults.entries()) {
+    const section = sections[i];
+    if (!section || result.status === "fulfilled") continue;
+    const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
+    logger.warn(`Failed to fetch section "${section.titulo}": ${message}`);
+    sectionErrors.push({ title: section.titulo, url: section.link, message });
+  }
   state.sectionLinks = sections;
 
   // Match keywords across all docs
@@ -227,6 +236,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       downloadedPdfPaths,
       numMatches,
       emailSent: false,
+      sectionErrors,
     };
     const mail = composeEmail(result, {
       smtp: config.smtp,
@@ -245,5 +255,6 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
     downloadedPdfPaths,
     numMatches,
     emailSent,
+    sectionErrors,
   };
 }
