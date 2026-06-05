@@ -46,6 +46,7 @@ export interface ScrapeResult {
   numMatches: number;
   emailSent: boolean;
   sectionErrors: SectionError[];
+  bulletinCount: number;
 }
 
 export interface SectionError {

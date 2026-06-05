@@ -44,6 +44,9 @@ function composeHtmlBody(
     matchedDocs: DocListItem[];
   },
 ): string {
+  const bulletinTitle =
+    result.bulletinCount > 1 ? `${result.bulletinCount} new bulletins` : result.state.ultimoBoletin;
+
   const rows: string[] = [];
   rows.push(`<!DOCTYPE html>
 <html>
@@ -53,7 +56,7 @@ function composeHtmlBody(
 <div style="background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
 <div style="background: #1a365d; color: #fff; padding: 24px 32px;">
 <h1 style="margin: 0; font-size: 18px; font-weight: 600;">[NUEVO BOIB]</h1>
-<p style="margin: 4px 0 0; font-size: 14px; opacity: 0.9;">${escapeHtml(result.state.ultimoBoletin)}</p>
+<p style="margin: 4px 0 0; font-size: 14px; opacity: 0.9;">${escapeHtml(bulletinTitle)}</p>
 </div>
 <div style="padding: 24px 32px;">`);
 
@@ -159,7 +162,10 @@ export function composeEmail(
   return {
     from: config.smtp.user,
     to: config.smtp.recipients.join(", "),
-    subject: `[NUEVO BOIB] ${sanitizeForEmail(result.state.ultimoBoletin)}`,
+    subject:
+      result.bulletinCount > 1
+        ? `[NUEVO BOIB] ${result.bulletinCount} new bulletins`
+        : `[NUEVO BOIB] ${sanitizeForEmail(result.state.ultimoBoletin)}`,
     text: emailBody,
     html: composeHtmlBody(result, {
       wordsToSearch: config.wordsToSearch,

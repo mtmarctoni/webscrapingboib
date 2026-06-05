@@ -102,6 +102,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       numMatches: 0,
       emailSent,
       sectionErrors: [],
+      bulletinCount: 0,
     };
   }
 
@@ -276,6 +277,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       numMatches: totalMatches,
       emailSent: false,
       sectionErrors: allSectionErrors,
+      bulletinCount: newItems.length,
     };
     const mail = composeEmail(result, {
       smtp: config.smtp,
@@ -295,5 +297,6 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
     numMatches: totalMatches,
     emailSent,
     sectionErrors: allSectionErrors,
+    bulletinCount: newItems.length,
   };
 }
