@@ -32,6 +32,7 @@ export interface BoibState {
   customersMatched: string[];
   sectionLinks: SectionLink[];
   numMatches: number;
+  processedRssGuids: string[];
 }
 
 /**
@@ -68,5 +69,6 @@ export function createEmptyBoibState(): BoibState {
     customersMatched: [],
     sectionLinks: [],
     numMatches: 0,
+    processedRssGuids: [],
   };
 }
