@@ -44,6 +44,13 @@ export interface ScrapeResult {
   downloadedPdfPaths: string[];
   numMatches: number;
   emailSent: boolean;
+  sectionErrors: SectionError[];
+}
+
+export interface SectionError {
+  title: string;
+  url: string;
+  message: string;
 }
 
 /**
