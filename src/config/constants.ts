@@ -26,3 +26,5 @@ export const PDF_DOWNLOAD_FOLDER = "BOIBpdfs";
 export const SMTP_HOST = "smtp.zoho.eu";
 export const SMTP_PORT = 465;
 export const SMTP_SECURE = true;
+
+export const BOIB_RSS_URL = "https://www.caib.es/eboibfront/indexrss.do?lang=ca";
