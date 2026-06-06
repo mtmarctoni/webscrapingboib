@@ -155,7 +155,15 @@ describe("runScrape", () => {
 
   it("returns early when no new bulletin is available", async () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
+      ultimoBoletin: "BOIB Núm 070/2026",
+      isExtraordinary: false,
+      idBoib: "12283",
+      idAnualBoib: "12283",
+      dateLastBoib: "2026-06-04",
       linkUltimoBoletin: LINK_BULLETIN_070,
+      customersMatched: [],
+      sectionLinks: [],
+      numMatches: 0,
       processedRssGuids: [GUID_070],
     }) as unknown as FileSystem["readJson"];
     deps.http.get = rssMock(RSS_ONE_ITEM);
@@ -338,7 +346,15 @@ describe("runScrape", () => {
       },
     });
     deps.fs.readJson = vi.fn().mockResolvedValue({
+      ultimoBoletin: "BOIB Núm 070/2026",
+      isExtraordinary: false,
+      idBoib: "12283",
+      idAnualBoib: "12283",
+      dateLastBoib: "2026-06-04",
       linkUltimoBoletin: LINK_BULLETIN_070,
+      customersMatched: [],
+      sectionLinks: [],
+      numMatches: 0,
       processedRssGuids: [GUID_070],
     }) as unknown as FileSystem["readJson"];
     deps.http.get = rssMock(RSS_ONE_ITEM);
@@ -365,7 +381,15 @@ describe("runScrape", () => {
 
   it("processes multiple new bulletins and aggregates results", async () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
+      ultimoBoletin: "BOIB Núm 999/2026",
+      isExtraordinary: false,
+      idBoib: "99999",
+      idAnualBoib: "99999",
+      dateLastBoib: "2026-06-01",
       linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
+      customersMatched: [],
+      sectionLinks: [],
+      numMatches: 0,
       processedRssGuids: ["https://www.caib.es/eboibfront/ca/2026/99999"],
     }) as unknown as FileSystem["readJson"];
     deps.http.get = vi.fn().mockImplementation(async (url: string) => {

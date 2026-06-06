@@ -12,6 +12,7 @@ export interface Logger {
   };
 }
 
+/** Creates a Logger backed by console and ora spinners. */
 export function createLogger(): Logger {
   return {
     info(message: string): void {

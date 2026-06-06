@@ -1,5 +1,6 @@
 import path from "node:path";
 
+/** Sanitises a path segment by removing dangerous characters and directory traversal. */
 export function sanitizePathSegment(segment: string): string {
   let sanitized = segment.replace(/[<>:"|?*]/g, "_").replace(/\0/g, "");
   while (sanitized.includes("..")) {
@@ -8,6 +9,7 @@ export function sanitizePathSegment(segment: string): string {
   return sanitized;
 }
 
+/** Builds a download folder path from bulletin identifiers and a date string. */
 export function buildDownloadFolderName(
   idAnualBoib: string,
   dateLastBoib: string,
@@ -19,6 +21,7 @@ export function buildDownloadFolderName(
   return path.resolve(process.cwd(), pdfDownloadFolder, folderName);
 }
 
+/** Resolves a file path within a folder, rejecting traversal and non-PDF names. */
 export function resolveSafePath(folderPath: string, fileName: string): string | null {
   const safeName = sanitizePathSegment(fileName);
   if (!safeName.endsWith(".pdf")) {
