@@ -111,7 +111,13 @@ function makeDeps() {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    spinner: vi.fn().mockReturnValue({ start: vi.fn(), succeed: vi.fn(), fail: vi.fn() }),
+    spinner: vi.fn().mockReturnValue({
+      start: vi.fn(),
+      succeed: vi.fn(),
+      fail: vi.fn(),
+      warn: vi.fn(),
+      text: "",
+    }),
   };
   return { http, fs, email, logger };
 }

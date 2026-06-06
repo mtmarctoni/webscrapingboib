@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runScrapePipeline } from "../../src/application/pipeline.js";
 import type { Dependencies } from "../../src/application/useCases/scrapeBoib.js";
 import type { AppConfig } from "../../src/config/environment.js";
+import { makeConfig } from "../helpers.js";
 
 const mockRunScrape = vi.hoisted(() => vi.fn());
 
@@ -30,7 +31,7 @@ describe("runScrapePipeline", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     deps = makeDeps();
-    config = {} as AppConfig;
+    config = makeConfig();
   });
 
   it("returns success when runScrape succeeds", async () => {

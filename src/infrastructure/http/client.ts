@@ -104,7 +104,13 @@ export function createHttpClient(config: AppConfig, logger: Logger): HttpClient 
       if (!contentType.startsWith("application/pdf")) {
         throw new HttpError(`Expected application/pdf, got "${contentType}" for ${url}`);
       }
-      return Buffer.from(response.data as ArrayBuffer);
+      if (Buffer.isBuffer(response.data)) {
+        return response.data;
+      }
+      if (!(response.data instanceof ArrayBuffer)) {
+        throw new HttpError(`Expected binary data, got ${typeof response.data} for ${url}`);
+      }
+      return Buffer.from(response.data);
     },
   };
 }
