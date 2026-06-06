@@ -21,7 +21,7 @@ async function main(): Promise<void> {
 
   const logger = createLogger();
   const http = createHttpClient(config, logger);
-  const fs = createFileSystem(config);
+  const fs = createFileSystem();
   const email = createEmailTransport(config);
 
   if (config.sendEmail) {
