@@ -43,7 +43,6 @@ export interface ScrapeResult {
   success: boolean;
   state: BoibState;
   downloadedPdfPaths: string[];
-  numMatches: number;
   emailSent: boolean;
   sectionErrors: SectionError[];
   bulletinCount: number;
