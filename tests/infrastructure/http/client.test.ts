@@ -1,9 +1,16 @@
 import nock from "nock";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createHttpClient } from "../../../src/infrastructure/http/client.js";
+import type { Logger } from "../../../src/infrastructure/logger.js";
 
 describe("createHttpClient", () => {
   const allowedDomain = "https://www.caib.es";
+  const logger: Logger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    spinner: vi.fn() as unknown as Logger["spinner"],
+  };
   const config = {
     baseUrl: `${allowedDomain}/eboibfront/ca`,
     allowedDomain,
@@ -28,14 +35,14 @@ describe("createHttpClient", () => {
 
   describe("URL whitelisting", () => {
     it("blocks disallowed URLs", async () => {
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       await expect(client.get("https://evil.com/data")).rejects.toThrow("Blocked disallowed URL");
     });
 
     it("allows URLs on the allowed domain", async () => {
       const scope = nock(allowedDomain).get("/eboibfront/ca/test").reply(200, "OK");
 
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       const response = await client.get(`${allowedDomain}/eboibfront/ca/test`);
       expect(response.status).toBe(200);
       expect(response.data).toBe("OK");
@@ -51,7 +58,7 @@ describe("createHttpClient", () => {
         .get("/notfound")
         .reply(200, "Should not reach here");
 
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       // First call should fail immediately with 404 (no retry)
       // If it retried, the second nock handler would match
       await expect(client.get(`${allowedDomain}/notfound`)).rejects.toThrow("Request failed");
@@ -65,7 +72,7 @@ describe("createHttpClient", () => {
         .get("/server-error")
         .reply(200, "OK after retry");
 
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       const response = await client.get(`${allowedDomain}/server-error`);
       expect(response.status).toBe(200);
       expect(response.data).toBe("OK after retry");
@@ -79,7 +86,7 @@ describe("createHttpClient", () => {
         .get("/network-error")
         .reply(200, "OK after retry");
 
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       const response = await client.get(`${allowedDomain}/network-error`);
       expect(response.status).toBe(200);
       expect(response.data).toBe("OK after retry");
@@ -89,7 +96,7 @@ describe("createHttpClient", () => {
     it("gives up after max retries on persistent 5xx", async () => {
       const scope = nock(allowedDomain).get("/always-500").times(3).reply(500, "Server Error");
 
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       await expect(client.get(`${allowedDomain}/always-500`)).rejects.toThrow(
         "Failed after 3 retries",
       );
@@ -104,7 +111,7 @@ describe("createHttpClient", () => {
         .get("/doc.pdf")
         .reply(200, pdfContent, { "Content-Type": "application/pdf" });
 
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       const buffer = await client.getBuffer(`${allowedDomain}/doc.pdf`, config.maxPdfSize);
       expect(buffer).toBeInstanceOf(Buffer);
       expect(buffer.toString()).toBe("%PDF-1.4 test");
@@ -116,7 +123,7 @@ describe("createHttpClient", () => {
         .get("/doc.html")
         .reply(200, "<html></html>", { "Content-Type": "text/html" });
 
-      const client = createHttpClient(config);
+      const client = createHttpClient(config, logger);
       await expect(
         client.getBuffer(`${allowedDomain}/doc.html`, config.maxPdfSize),
       ).rejects.toThrow('Expected application/pdf, got "text/html"');
