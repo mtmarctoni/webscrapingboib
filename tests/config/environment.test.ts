@@ -11,17 +11,7 @@ import {
   SMTP_PORT,
   SMTP_SECURE,
 } from "../../src/config/constants.js";
-import { loadConfig } from "../../src/config/environment.js";
-
-function splitCommaList(value: string | undefined): string[] {
-  if (!value || value.trim() === "") {
-    return [];
-  }
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item !== "");
-}
+import { loadConfig, splitCommaList } from "../../src/config/environment.js";
 
 const ENV_KEYS = [
   "ZOHO_USER",
