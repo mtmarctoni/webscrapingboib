@@ -32,6 +32,7 @@ export interface BoibState {
   customersMatched: string[];
   sectionLinks: SectionLink[];
   numMatches: number;
+  processedRssGuids: string[];
 }
 
 /**
@@ -45,12 +46,14 @@ export interface ScrapeResult {
   numMatches: number;
   emailSent: boolean;
   sectionErrors: SectionError[];
+  bulletinCount: number;
 }
 
 export interface SectionError {
   title: string;
   url: string;
   message: string;
+  bulletin?: string;
 }
 
 /**
@@ -68,5 +71,6 @@ export function createEmptyBoibState(): BoibState {
     customersMatched: [],
     sectionLinks: [],
     numMatches: 0,
+    processedRssGuids: [],
   };
 }
