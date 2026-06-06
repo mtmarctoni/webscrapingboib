@@ -164,7 +164,7 @@ describe("runScrape", () => {
 
     expect(result.success).toBe(true);
     expect(result.downloadedPdfPaths).toEqual([]);
-    expect(result.numMatches).toBe(0);
+    expect(result.state.numMatches).toBe(0);
     expect(result.emailSent).toBe(false);
     expect(deps.http.get).toHaveBeenCalledTimes(1);
     expect(deps.http.get).toHaveBeenCalledWith(BOIB_RSS_URL);
@@ -221,7 +221,7 @@ describe("runScrape", () => {
 
     expect(result.success).toBe(true);
     expect(result.downloadedPdfPaths).toHaveLength(1);
-    expect(result.numMatches).toBe(0);
+    expect(result.state.numMatches).toBe(0);
     expect(deps.fs.writeJson).toHaveBeenCalledWith(config.stateFile, expect.any(Object));
   });
 
@@ -278,7 +278,7 @@ describe("runScrape", () => {
 
     expect(result.success).toBe(true);
     expect(result.downloadedPdfPaths).toEqual([]);
-    expect(result.numMatches).toBe(0);
+    expect(result.state.numMatches).toBe(0);
     expect(deps.fs.writeJson).toHaveBeenCalledWith(config.stateFile, expect.any(Object));
   });
 
@@ -395,7 +395,7 @@ describe("runScrape", () => {
 
     expect(result.success).toBe(true);
     expect(result.downloadedPdfPaths).toHaveLength(2);
-    expect(result.numMatches).toBe(0);
+    expect(result.state.numMatches).toBe(0);
     expect(result.state.processedRssGuids).toContain(GUID_070);
     expect(result.state.processedRssGuids).toContain(GUID_069);
   });
