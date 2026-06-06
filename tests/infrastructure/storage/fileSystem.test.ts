@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AppConfig } from "../../../src/config/environment.js";
 import { createFileSystem } from "../../../src/infrastructure/storage/fileSystem.js";
+import { makeConfig } from "../../helpers.js";
 
 vi.mock("node:fs/promises", () => ({
   default: {
@@ -11,10 +11,6 @@ vi.mock("node:fs/promises", () => ({
     readdir: vi.fn(),
   },
 }));
-
-function makeConfig(): AppConfig {
-  return {} as AppConfig;
-}
 
 describe("validatePdf", () => {
   let fs: ReturnType<typeof createFileSystem>;
