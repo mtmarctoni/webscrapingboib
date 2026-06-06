@@ -14,7 +14,7 @@ import {
 
 dotenv.config();
 
-export interface SmtpConfig {
+interface SmtpConfig {
   host: string;
   port: number;
   secure: boolean;

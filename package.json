@@ -11,6 +11,7 @@
     "reset": "rm -f lastBoibInfo.json && rm -rf BOIBpdfs",
     "try": "rm -f lastBoibInfo.json && pnpm start",
     "typecheck": "tsc --noEmit",
+    "knip": "knip",
     "lint": "biome check src/ tests/",
     "lint:fix": "biome check --write --unsafe src/ tests/",
     "format": "biome format --write src/ tests/",
@@ -38,6 +39,7 @@
     "@biomejs/biome": "^2.4.15",
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "^4.1.8",
+    "knip": "^6.16.0",
     "nock": "^14.0.15",
     "typescript": "^5.9.2",
     "vitest": "^4.1.8"
