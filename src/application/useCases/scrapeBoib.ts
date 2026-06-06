@@ -75,7 +75,16 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
   // Filter out already-processed items
   const processedGuids = new Set(previousState.processedRssGuids ?? []);
-  const newItems = rssItems.filter((item) => !processedGuids.has(item.guid));
+  let newItems = rssItems.filter((item) => !processedGuids.has(item.guid));
+
+  // First run with no prior bulletin: only process the latest item
+  if (newItems.length > 0 && !previousState.linkUltimoBoletin) {
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed non-empty (checked above)
+    newItems = [newItems[0]!];
+  }
+
+  // Process oldest first for chronological order
+  newItems.reverse();
 
   // No new bulletins
   if (newItems.length === 0) {
@@ -256,15 +265,21 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
     // Track this GUID as processed
     processedGuids.add(item.guid);
+
+    // Save intermediate state for partial progress
+    await fs.writeJson(config.stateFile, {
+      ...state,
+      customersMatched: [...allCustomersMatched],
+      numMatches: totalMatches,
+      processedRssGuids: [...processedGuids],
+    });
+
     lastBulletinState = state;
   }
 
-  // Build final saved state — use newest bulletin metadata for state tracking
-  // biome-ignore lint/style/noNonNullAssertion: newItems guaranteed non-empty (checked above)
-  const newestMeta = bulletinMetadataFromRssItem(newItems[0]!);
+  // Build final saved state
   const finalState: BoibState = {
     ...lastBulletinState,
-    ...newestMeta,
     customersMatched: allCustomersMatched,
     numMatches: totalMatches,
     processedRssGuids: [...processedGuids],
