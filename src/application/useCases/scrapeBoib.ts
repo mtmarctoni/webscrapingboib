@@ -79,8 +79,10 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
   // First run with no prior bulletin: only process the latest item
   if (newItems.length > 0 && !previousState.linkUltimoBoletin) {
-    // biome-ignore lint/style/noNonNullAssertion: guaranteed non-empty (checked above)
-    newItems = [newItems[0]!];
+    const first = newItems[0];
+    if (first) {
+      newItems = [first];
+    }
   }
 
   // Process oldest first for chronological order
@@ -108,7 +110,6 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       success: true,
       state: { ...previousState },
       downloadedPdfPaths: [],
-      numMatches: 0,
       emailSent,
       sectionErrors: [],
       bulletinCount: 0,
@@ -297,7 +298,6 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       success: true,
       state: finalState,
       downloadedPdfPaths: allDownloadedPdfPaths,
-      numMatches: totalMatches,
       emailSent: false,
       sectionErrors: allSectionErrors,
       bulletinCount: newItems.length,
@@ -317,7 +317,6 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
     success: true,
     state: finalState,
     downloadedPdfPaths: allDownloadedPdfPaths,
-    numMatches: totalMatches,
     emailSent,
     sectionErrors: allSectionErrors,
     bulletinCount: newItems.length,

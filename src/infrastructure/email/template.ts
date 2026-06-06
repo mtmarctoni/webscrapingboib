@@ -72,9 +72,9 @@ function composeHtmlBody(
       `<p><strong>${result.downloadedPdfPaths.length}</strong> BOIB(s) found matching your criteria:</p>`,
     );
 
-    if (result.numMatches > 0) {
+    if (result.state.numMatches > 0) {
       rows.push(`<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
-<p style="margin: 0; font-weight: 600; color: #856404;">*** ALERT *** ${result.numMatches} match(es) found with the provided customer names:</p>
+<p style="margin: 0; font-weight: 600; color: #856404;">*** ALERT *** ${result.state.numMatches} match(es) found with the provided customer names:</p>
 <p style="margin: 4px 0 0; color: #856404;">${config.customers.map((c) => escapeHtml(c)).join(", ")}</p>
 </div>`);
     }
@@ -137,14 +137,14 @@ export function composeEmail(
     }
     emailBody += `\n`;
 
-    if (result.numMatches === 0) {
+    if (result.state.numMatches === 0) {
       emailBody += `No matches found with the provided customer names:\n\n`;
       for (const customer of config.customers) {
         emailBody += `  - ${sanitizeForEmail(customer)}\n`;
       }
       emailBody += `\n`;
     } else {
-      emailBody += `*** ALERT *** ${result.numMatches} match(es) found with the provided customer names:\n\n`;
+      emailBody += `*** ALERT *** ${result.state.numMatches} match(es) found with the provided customer names:\n\n`;
       for (const customer of config.customers) {
         emailBody += `  - ${sanitizeForEmail(customer)}\n`;
       }
