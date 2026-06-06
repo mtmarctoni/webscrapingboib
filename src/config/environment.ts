@@ -58,7 +58,7 @@ function validateEmailFormat(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function splitCommaList(value: string | undefined): string[] {
+export function splitCommaList(value: string | undefined): string[] {
   if (!value || value.trim() === "") {
     return [];
   }
