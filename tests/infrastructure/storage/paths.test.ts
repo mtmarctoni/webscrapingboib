@@ -51,10 +51,11 @@ describe("buildDownloadFolderName", () => {
     expect(path.isAbsolute(result)).toBe(true);
   });
 
-  it("handles malformed date gracefully (NaN values)", () => {
+  it("handles malformed date gracefully (falls back to current date)", () => {
     const result = buildDownloadFolderName("2024", "invalid-date", "BOIBpdfs");
     expect(result).toContain("BOIBpdfs");
-    expect(result).toContain("2024_NaN-NaN-NaN");
+    expect(result).not.toContain("NaN");
+    expect(result).toMatch(/\d+-\d+-\d+/);
   });
 });
 

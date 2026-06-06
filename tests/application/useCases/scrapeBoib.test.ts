@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runScrape } from "../../../src/application/useCases/scrapeBoib.js";
+import { runScrape, withConcurrencyLimit } from "../../../src/application/useCases/scrapeBoib.js";
 import { BOIB_RSS_URL } from "../../../src/config/constants.js";
 import type { AppConfig } from "../../../src/config/environment.js";
 import type { EmailTransport } from "../../../src/infrastructure/email/transport.js";
@@ -363,6 +363,26 @@ describe("runScrape", () => {
     await expect(runScrape(config, deps)).rejects.toThrow();
   });
 
+  it("handles old state without processedRssGuids (migration path)", async () => {
+    deps.fs.readJson = vi.fn().mockResolvedValue({
+      linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
+    }) as unknown as FileSystem["readJson"];
+    deps.http.get = fullPipelineMock();
+    deps.http.getBuffer = vi
+      .fn()
+      .mockResolvedValue(Buffer.from("%PDF-1.7\n...")) as unknown as HttpClient["getBuffer"];
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
+
+    const result = await runScrape(config, deps);
+
+    expect(result.success).toBe(true);
+    expect(result.state.processedRssGuids).toBeDefined();
+    expect(result.state.processedRssGuids).toContain(GUID_070);
+  });
+
   it("processes multiple new bulletins and aggregates results", async () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
       linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
@@ -398,5 +418,38 @@ describe("runScrape", () => {
     expect(result.state.numMatches).toBe(0);
     expect(result.state.processedRssGuids).toContain(GUID_070);
     expect(result.state.processedRssGuids).toContain(GUID_069);
+  });
+});
+
+describe("withConcurrencyLimit", () => {
+  it("handles empty array", async () => {
+    const fn = vi.fn();
+    await withConcurrencyLimit([], 5, fn);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("handles all items failing", async () => {
+    const fn = vi.fn().mockRejectedValue(new Error("fail"));
+    await withConcurrencyLimit(["a", "b", "c"], 2, fn);
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it("handles some items failing", async () => {
+    const fn = vi.fn().mockImplementation(async (item: string) => {
+      if (item === "b") throw new Error("fail");
+    });
+    await withConcurrencyLimit(["a", "b", "c"], 2, fn);
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it("respects concurrency limit of 1 (sequential execution)", async () => {
+    const order: string[] = [];
+    const fn = vi.fn().mockImplementation(async (item: string) => {
+      order.push(item);
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    await withConcurrencyLimit(["x", "y", "z"], 1, fn);
+    expect(order).toEqual(["x", "y", "z"]);
+    expect(fn).toHaveBeenCalledTimes(3);
   });
 });
