@@ -40,6 +40,8 @@ function isValidBoibState(state: unknown): state is BoibState {
   );
 }
 
+const PDF_DOWNLOAD_CONCURRENCY = 5;
+
 export async function withConcurrencyLimit<T>(
   items: T[],
   limit: number,
@@ -229,7 +231,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
       await withConcurrencyLimit(
         pdfLinks,
-        5,
+        PDF_DOWNLOAD_CONCURRENCY,
         async (link) => {
           try {
             const data = await http.getBuffer(link, config.maxPdfSize);

@@ -1,7 +1,7 @@
 {
   "name": "webscrapingboib",
   "version": "1.0.0",
-  "description": "",
+  "description": "BOIB scraper with keyword/customer matching and email notification",
   "type": "module",
   "main": "dist/src/main.js",
   "packageManager": "pnpm@11.0.0",

@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createFileSystem } from "../../../src/infrastructure/storage/fileSystem.js";
-import { makeConfig } from "../../helpers.js";
 
 vi.mock("node:fs/promises", () => ({
   default: {
@@ -16,7 +15,7 @@ describe("validatePdf", () => {
   let fs: ReturnType<typeof createFileSystem>;
 
   beforeEach(() => {
-    fs = createFileSystem(makeConfig());
+    fs = createFileSystem();
   });
 
   it("accepts valid PDF with version 1.7", () => {
@@ -75,7 +74,7 @@ describe("readJson", () => {
   let fileSystem: ReturnType<typeof createFileSystem>;
 
   beforeEach(() => {
-    fileSystem = createFileSystem(makeConfig());
+    fileSystem = createFileSystem();
     vi.resetAllMocks();
   });
 

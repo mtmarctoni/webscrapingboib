@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import type { AppConfig } from "../../config/environment.js";
 
 const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]);
 
@@ -13,7 +12,7 @@ export interface FileSystem {
 }
 
 /** Creates a FileSystem wrapping the native fs/promises module with JSON helpers and PDF validation. */
-export function createFileSystem(_config: AppConfig): FileSystem {
+export function createFileSystem(): FileSystem {
   return {
     async readJson<T>(filePath: string): Promise<T | null> {
       try {
