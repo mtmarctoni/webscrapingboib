@@ -75,7 +75,7 @@ export function loadConfig(): AppConfig {
   for (const varName of requiredVars) {
     try {
       requireEnvVar(varName);
-    } catch (e) {
+    } catch (e: unknown) {
       if (e instanceof EnvValidationError) {
         missing.push(...e.missingVars);
       }
