@@ -16,7 +16,8 @@ async function main(): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Configuration error: ${message}`);
     console.error("Please check your .env file and ensure all required variables are set.");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   const logger = createLogger();
@@ -38,7 +39,9 @@ async function main(): Promise<void> {
   const result = await runScrapePipeline(config, { http, fs, email, logger });
 
   console.log("----------");
-  process.exit(result.success ? 0 : 1);
+  if (!result.success) {
+    process.exitCode = 1;
+  }
 }
 
 main();

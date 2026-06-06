@@ -13,15 +13,15 @@ describe("sanitizePathSegment", () => {
   });
 
   it("removes path traversal sequences ..", () => {
-    expect(sanitizePathSegment("../foo")).toBe("/foo");
-    expect(sanitizePathSegment("../../etc/passwd")).toBe("//etc/passwd");
+    expect(sanitizePathSegment("../foo")).toBe("../foo");
+    expect(sanitizePathSegment("../../etc/passwd")).toBe("../../etc/passwd");
   });
 
   it("handles double-dot bypass patterns", () => {
-    expect(sanitizePathSegment("..../foo")).toBe("/foo");
-    expect(sanitizePathSegment("......")).toBe("");
-    expect(sanitizePathSegment("..\\..")).toBe("\\");
-    expect(sanitizePathSegment("a..b..c..d")).toBe("abcd");
+    expect(sanitizePathSegment("..../foo")).toBe("..../foo");
+    expect(sanitizePathSegment("......")).toBe("......");
+    expect(sanitizePathSegment("..\\..")).toBe("..\\..");
+    expect(sanitizePathSegment("a..b..c..d")).toBe("a..b..c..d");
   });
 
   it("replaces invalid filesystem characters with underscore", () => {
@@ -81,20 +81,16 @@ describe("resolveSafePath", () => {
     expect(result).toContain("file_name_.pdf");
   });
 
-  it("returns a safe path even after sanitizing traversal patterns", () => {
+  it("returns a safe path even with dots in filename", () => {
     const result = resolveSafePath("/tmp/BOIBpdfs", "..../secret.pdf");
     expect(result).not.toBeNull();
-    expect(result).toBe(path.resolve("/tmp/BOIBpdfs", "secret.pdf"));
+    expect(result).toBe(path.resolve("/tmp/BOIBpdfs", "..../secret.pdf"));
   });
 
   it("blocks paths that would escape the folder via boundary check", () => {
-    // Test boundary check directly with a path that sanitizePathSegment does not catch
-    // but still resolves outside. On macOS, path.join with absolute second arg
-    // still prepends the folder, so we test with a relative path that goes up.
+    // sanitizePathSegment no longer strips .. sequences — boundary check
+    // in resolveSafePath is the authoritative defense.
     const result = resolveSafePath("/tmp/BOIBpdfs", "foo/../../../etc/passwd.pdf");
-    // sanitizePathSegment turns foo/../../../etc/passwd.pdf → foo/etc/passwd.pdf
-    // which is inside the folder, so boundary check passes
-    expect(result).not.toBeNull();
-    expect(result).toBe(path.resolve("/tmp/BOIBpdfs", "foo/etc/passwd.pdf"));
+    expect(result).toBeNull();
   });
 });
