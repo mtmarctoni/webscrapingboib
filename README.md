@@ -71,14 +71,14 @@ BOIBpdfs/                    — Downloaded PDFs organized by date
 See `.env.template` for all available variables.
 
 | Variable | Required | Purpose |
-|---|---|---|
+|---|---|---|---|
 | `ZOHO_USER` | Yes | SMTP login email |
 | `ZOHO_PASSWORD` | Yes | SMTP password |
-| `WORDTOSEARCH_1` | Yes | First search keyword |
-| `WORDTOSEARCH_2..9` | No | Additional keywords |
-| `CUSTOMER_1..7` | No | Customer names to match in HTML tables |
-| `RECIPIENT1..3` | No | Email recipients |
-| `SEND_EMAIL` | No | Set to `false` to disable email |
+| `WORDSTOSEARCH` | Yes | Comma-separated search keywords |
+| `CUSTOMERS` | No | Comma-separated customer names to match in HTML tables |
+| `RECIPIENTS` | No | Comma-separated email recipients |
+| `SEND_EMAIL` | No | Set to `true` to enable email (default: `false`) |
+| `NOTIFY_NO_MATCH` | No | Set to `true` to receive notification when no new BOIB is available |
 
 ## License
 
