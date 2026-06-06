@@ -12,14 +12,33 @@ vi.mock("../../src/application/useCases/scrapeBoib.js", () => ({
 
 function makeDeps(): Dependencies {
   return {
-    http: {} as Dependencies["http"],
-    fs: {} as Dependencies["fs"],
-    email: {} as Dependencies["email"],
+    http: {
+      get: vi.fn(),
+      getBuffer: vi.fn(),
+    },
+    fs: {
+      readJson: vi.fn(),
+      writeJson: vi.fn(),
+      mkdir: vi.fn(),
+      readdir: vi.fn(),
+      writeFile: vi.fn(),
+      validatePdf: vi.fn(),
+    },
+    email: {
+      verify: vi.fn(),
+      send: vi.fn(),
+    },
     logger: {
       info: vi.fn(),
       warn: vi.fn(),
       error: vi.fn(),
-      spinner: vi.fn() as unknown as Dependencies["logger"]["spinner"],
+      spinner: vi.fn().mockReturnValue({
+        start: vi.fn(),
+        succeed: vi.fn(),
+        fail: vi.fn(),
+        warn: vi.fn(),
+        text: "",
+      }),
     },
   };
 }
