@@ -1,3 +1,6 @@
+# Only esbuild is allowed to run install scripts.
+# This is an intentional security posture to minimise supply-chain risk from
+# malicious lifecycle hooks in transitive dependencies.
 allowBuilds:
   esbuild: true
 onlyBuiltDependencies:

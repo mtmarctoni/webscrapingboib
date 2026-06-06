@@ -26,10 +26,17 @@ function assertString(value: unknown, context: string): string {
 }
 
 function isValidBoibState(state: unknown): state is BoibState {
+  if (typeof state !== "object" || state === null) {
+    return false;
+  }
+  const s = state as BoibState;
   return (
-    typeof state === "object" &&
-    state !== null &&
-    typeof (state as BoibState).linkUltimoBoletin === "string"
+    typeof s.ultimoBoletin === "string" &&
+    typeof s.linkUltimoBoletin === "string" &&
+    typeof s.idBoib === "string" &&
+    typeof s.idAnualBoib === "string" &&
+    typeof s.dateLastBoib === "string" &&
+    typeof s.numMatches === "number"
   );
 }
 

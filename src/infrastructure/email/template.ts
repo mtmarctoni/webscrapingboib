@@ -21,6 +21,7 @@ export interface EmailContent {
   attachments: { filename: string; path: string }[];
 }
 
+/** Builds a notification email when no new BOIB bulletins are found. */
 export function composeNoNewBoibEmail(
   config: {
     smtp: { user: string; recipients: string[] };
@@ -114,6 +115,7 @@ ${doc.htmlLink ? `<a href="${escapeHtml(doc.htmlLink)}" style="color: #2563eb; t
   return rows.join("\n");
 }
 
+/** Composes the main result email with matched documents, PDFs, and customer alerts. */
 export function composeEmail(
   result: ScrapeResult,
   config: {
