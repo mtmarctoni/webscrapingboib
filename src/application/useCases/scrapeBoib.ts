@@ -39,10 +39,18 @@ async function withConcurrencyLimit<T>(
   items: T[],
   limit: number,
   fn: (item: T) => Promise<void>,
+  logger: Logger,
 ): Promise<void> {
   for (let i = 0; i < items.length; i += limit) {
     const batch = items.slice(i, i + limit);
-    await Promise.allSettled(batch.map(fn));
+    const results = await Promise.allSettled(batch.map(fn));
+    for (const result of results) {
+      if (result.status === "rejected") {
+        const message =
+          result.reason instanceof Error ? result.reason.message : String(result.reason);
+        logger.warn(`Concurrent task failed: ${message}`);
+      }
+    }
   }
 }
 
@@ -214,27 +222,32 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       const spinner = logger.spinner(`Downloading PDFs to:\n${folderPath}`);
       spinner.start();
 
-      await withConcurrencyLimit(pdfLinks, PDF_DOWNLOAD_CONCURRENCY, async (link) => {
-        try {
-          const data = await http.getBuffer(link, config.maxPdfSize);
-          if (!fs.validatePdf(data)) {
-            logger.warn(`Skipping non-PDF content from ${link}`);
-            return;
+      await withConcurrencyLimit(
+        pdfLinks,
+        PDF_DOWNLOAD_CONCURRENCY,
+        async (link) => {
+          try {
+            const data = await http.getBuffer(link, config.maxPdfSize);
+            if (!fs.validatePdf(data)) {
+              logger.warn(`Skipping non-PDF content from ${link}`);
+              return;
+            }
+            const baseName = link.split("/").pop() || `boib_${Date.now()}`;
+            const fileName = baseName.endsWith(".pdf") ? baseName : `${baseName}.pdf`;
+            const filePath = resolveSafePath(folderPath, fileName);
+            if (!filePath) {
+              logger.warn(`Skipping potentially unsafe path: ${fileName}`);
+              return;
+            }
+            await fs.writeFile(filePath, data);
+            allDownloadedPdfPaths.push(filePath);
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.warn(`Failed to download ${link}: ${message}`);
           }
-          const baseName = link.split("/").pop() || `boib_${Date.now()}`;
-          const fileName = baseName.endsWith(".pdf") ? baseName : `${baseName}.pdf`;
-          const filePath = resolveSafePath(folderPath, fileName);
-          if (!filePath) {
-            logger.warn(`Skipping potentially unsafe path: ${fileName}`);
-            return;
-          }
-          await fs.writeFile(filePath, data);
-          allDownloadedPdfPaths.push(filePath);
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : String(err);
-          logger.warn(`Failed to download ${link}: ${message}`);
-        }
-      });
+        },
+        logger,
+      );
       spinner.succeed("Download completed");
 
       // Match customers in HTML docs concurrently
