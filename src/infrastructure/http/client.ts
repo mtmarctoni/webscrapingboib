@@ -1,6 +1,7 @@
 import https from "node:https";
 import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 import type { AppConfig } from "../../config/environment.js";
+import type { Logger } from "../logger.js";
 
 export interface HttpClient {
   get(url: string): Promise<AxiosResponse>;
@@ -40,6 +41,7 @@ function isRetryableError(err: unknown): boolean {
 
 async function withRetry<T>(
   fn: () => Promise<T>,
+  logger: Logger,
   maxRetries: number = 3,
   delayMs: number = 2000,
 ): Promise<T> {
@@ -53,7 +55,7 @@ async function withRetry<T>(
         throw new HttpError(`Request failed: ${lastError.message}`);
       }
       if (attempt < maxRetries) {
-        console.warn(`Attempt ${attempt} failed. Retrying in ${delayMs}ms...`);
+        logger.warn(`Attempt ${attempt} failed. Retrying in ${delayMs}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
@@ -63,7 +65,7 @@ async function withRetry<T>(
   );
 }
 
-export function createHttpClient(config: AppConfig): HttpClient {
+export function createHttpClient(config: AppConfig, logger: Logger): HttpClient {
   const instance: AxiosInstance = axios.create({
     timeout: config.httpTimeout,
     maxContentLength: config.maxContentLength,
@@ -80,20 +82,22 @@ export function createHttpClient(config: AppConfig): HttpClient {
       if (!isAllowedUrl(url, config.allowedDomain)) {
         throw new HttpError(`Blocked disallowed URL: ${url}`);
       }
-      return withRetry(() => instance.get(url));
+      return withRetry(() => instance.get(url), logger);
     },
 
     async getBuffer(url: string, maxSize: number): Promise<Buffer> {
       if (!isAllowedUrl(url, config.allowedDomain)) {
         throw new HttpError(`Blocked disallowed URL: ${url}`);
       }
-      const response = await withRetry(() =>
-        instance.get(url, {
-          responseType: "arraybuffer",
-          timeout: config.httpTimeout,
-          maxContentLength: maxSize,
-          maxBodyLength: maxSize,
-        }),
+      const response = await withRetry(
+        () =>
+          instance.get(url, {
+            responseType: "arraybuffer",
+            timeout: config.httpTimeout,
+            maxContentLength: maxSize,
+            maxBodyLength: maxSize,
+          }),
+        logger,
       );
       const contentType = String(response.headers["content-type"] ?? "");
       if (!contentType.startsWith("application/pdf")) {
