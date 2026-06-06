@@ -40,7 +40,7 @@ function isValidBoibState(state: unknown): state is BoibState {
   );
 }
 
-async function withConcurrencyLimit<T>(
+export async function withConcurrencyLimit<T>(
   items: T[],
   limit: number,
   fn: (item: T) => Promise<void>,
@@ -287,13 +287,15 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
     // Track this GUID as processed
     processedGuids.add(item.guid);
 
-    // Save intermediate state for partial progress
-    await fs.writeJson(config.stateFile, {
-      ...state,
-      customersMatched: [...allCustomersMatched],
-      numMatches: totalMatches,
-      processedRssGuids: [...processedGuids],
-    });
+    // Save intermediate state for partial progress (only needed for multiple bulletins)
+    if (newItems.length > 1) {
+      await fs.writeJson(config.stateFile, {
+        ...state,
+        customersMatched: [...allCustomersMatched],
+        numMatches: totalMatches,
+        processedRssGuids: [...processedGuids],
+      });
+    }
 
     lastBulletinState = state;
   }

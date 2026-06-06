@@ -12,7 +12,8 @@ export function buildDownloadFolderName(
   pdfDownloadFolder: string,
 ): string {
   const sanitizedId = sanitizePathSegment(idAnualBoib);
-  const date = new Date(dateLastBoib);
+  const parsed = new Date(dateLastBoib);
+  const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   const folderName = `${sanitizedId}_${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
   return path.resolve(process.cwd(), pdfDownloadFolder, folderName);
 }
