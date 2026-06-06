@@ -92,20 +92,21 @@ export interface SectionMenuResult {
 export function parseSectionMenu(html: string, domainUrl: string): SectionMenuResult {
   const $ = cheerio.load(html);
   const isExtraordinary = $("a.fijo p").last().text().includes("Extraordinari");
-  const $sectionMenuHtml = cheerio.load($(".primerosHijos").prop("outerHTML") ?? "<div></div>");
   const sections: SectionLink[] = [];
 
-  $sectionMenuHtml("li").each((i, elem) => {
-    const href = $sectionMenuHtml(elem).find("a").attr("href") ?? "";
-    const link = domainUrl.concat(href);
-    const titulo = link.split("/").reverse()[1]?.replace(/-/g, " ") ?? "";
-    sections.push({
-      id: i,
-      titulo,
-      link,
-      docList: [],
+  $(".primerosHijos")
+    .find("li")
+    .each((i, elem) => {
+      const href = $(elem).find("a").attr("href") ?? "";
+      const link = domainUrl.concat(href);
+      const titulo = link.split("/").reverse()[1]?.replace(/-/g, " ") ?? "";
+      sections.push({
+        id: i,
+        titulo,
+        link,
+        docList: [],
+      });
     });
-  });
 
   return { sections, isExtraordinary };
 }
@@ -120,58 +121,57 @@ export function parseSectionMenu(html: string, domainUrl: string): SectionMenuRe
 export function parseDocList(html: string, domainUrl: string): DocListItem[] {
   const $ = cheerio.load(html);
   const docs: DocListItem[] = [];
-  const llistatElement = $(".llistat");
 
-  if (!llistatElement.length) {
+  if (!$(".llistat").length) {
     return docs;
   }
 
-  const $docList = cheerio.load(llistatElement.prop("outerHTML") ?? "<div></div>");
+  $(".llistat")
+    .find("ul.resolucions")
+    .each((_j, elems) => {
+      const description = $(elems).find("p").first().text();
+      const idText = $(elems).find("p.registre").first().text().trim();
+      const id = idText.split("-")[0]?.split(" ").reverse()[1] ?? "";
 
-  $docList("ul.resolucions").each((_j, elems) => {
-    const description = $docList(elems).find("p").first().text();
-    const idText = $docList(elems).find("p.registre").first().text().trim();
-    const id = idText.split("-")[0]?.split(" ").reverse()[1] ?? "";
+      let pendingPdf = "";
 
-    let pendingPdf = "";
-
-    $docList(elems)
-      .find("a")
-      .each((_i, elem) => {
-        const link = $docList(elem).attr("href") ?? "";
-        if (link.startsWith("/eboibfront/pdf/")) {
-          if (pendingPdf) {
-            docs.push({
-              id,
-              description,
-              downloadPdfLink: pendingPdf,
-              htmlLink: "",
-            });
+      $(elems)
+        .find("a")
+        .each((_i, elem) => {
+          const link = $(elem).attr("href") ?? "";
+          if (link.startsWith("/eboibfront/pdf/")) {
+            if (pendingPdf) {
+              docs.push({
+                id,
+                description,
+                downloadPdfLink: pendingPdf,
+                htmlLink: "",
+              });
+            }
+            pendingPdf = domainUrl + link;
+          } else if (!link.endsWith("xml") && !link.endsWith("rdf")) {
+            const safeLink = link.startsWith("/") ? domainUrl + link : link;
+            if (pendingPdf) {
+              docs.push({
+                id,
+                description,
+                downloadPdfLink: pendingPdf,
+                htmlLink: safeLink,
+              });
+              pendingPdf = "";
+            }
           }
-          pendingPdf = domainUrl + link;
-        } else if (!link.endsWith("xml") && !link.endsWith("rdf")) {
-          const safeLink = link.startsWith("/") ? domainUrl + link : link;
-          if (pendingPdf) {
-            docs.push({
-              id,
-              description,
-              downloadPdfLink: pendingPdf,
-              htmlLink: safeLink,
-            });
-            pendingPdf = "";
-          }
-        }
-      });
+        });
 
-    if (pendingPdf) {
-      docs.push({
-        id,
-        description,
-        downloadPdfLink: pendingPdf,
-        htmlLink: "",
-      });
-    }
-  });
+      if (pendingPdf) {
+        docs.push({
+          id,
+          description,
+          downloadPdfLink: pendingPdf,
+          htmlLink: "",
+        });
+      }
+    });
 
   return docs;
 }

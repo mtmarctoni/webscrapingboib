@@ -14,6 +14,7 @@ export interface EmailTransport {
   }): Promise<void>;
 }
 
+/** Creates an EmailTransport wrapping nodemailer with the given SMTP config. */
 export function createEmailTransport(config: AppConfig): EmailTransport {
   const transporter: Transporter = nodemailer.createTransport({
     host: config.smtp.host,

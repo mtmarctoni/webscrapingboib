@@ -11,6 +11,7 @@ export interface FileSystem {
   validatePdf(data: Buffer): boolean;
 }
 
+/** Creates a FileSystem wrapping the native fs/promises module with JSON helpers and PDF validation. */
 export function createFileSystem(): FileSystem {
   return {
     async readJson<T>(filePath: string): Promise<T | null> {

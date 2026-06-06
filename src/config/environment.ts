@@ -46,6 +46,7 @@ class EnvValidationError extends Error {
   }
 }
 
+/** Reads a required env var, throwing if it's missing or empty. */
 function requireEnvVar(name: string): string {
   const value = process.env[name];
   if (!value || value.trim() === "") {
@@ -54,10 +55,12 @@ function requireEnvVar(name: string): string {
   return value.trim();
 }
 
+/** Validates an email address against a basic regex pattern. */
 function validateEmailFormat(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+/** Splits a comma-separated string into a trimmed, filtered array. */
 export function splitCommaList(value: string | undefined): string[] {
   if (!value || value.trim() === "") {
     return [];

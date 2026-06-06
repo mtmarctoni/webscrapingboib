@@ -65,6 +65,7 @@ async function withRetry<T>(
   );
 }
 
+/** Creates an HttpClient with retry logic, URL allow-listing, and PDF content validation. */
 export function createHttpClient(config: AppConfig, logger: Logger): HttpClient {
   const instance: AxiosInstance = axios.create({
     timeout: config.httpTimeout,
