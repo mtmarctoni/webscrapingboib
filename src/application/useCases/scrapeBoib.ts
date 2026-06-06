@@ -149,7 +149,12 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
       const message =
         result.reason instanceof Error ? result.reason.message : String(result.reason);
       logger.warn(`Failed to fetch section "${section.titulo}": ${message}`);
-      sectionErrors.push({ title: section.titulo, url: section.link, message });
+      sectionErrors.push({
+        title: section.titulo,
+        url: section.link,
+        message,
+        bulletin: meta.ultimoBoletin,
+      });
     }
     allSectionErrors.push(...sectionErrors);
     state.sectionLinks = sections;
@@ -246,17 +251,20 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
           }
         }),
       );
-      logger.info(`Found ${totalMatches} match(es) so far`);
     }
+    logger.info(`Found ${totalMatches} match(es) so far`);
 
     // Track this GUID as processed
     processedGuids.add(item.guid);
     lastBulletinState = state;
   }
 
-  // Build final saved state
+  // Build final saved state — use newest bulletin metadata for state tracking
+  // biome-ignore lint/style/noNonNullAssertion: newItems guaranteed non-empty (checked above)
+  const newestMeta = bulletinMetadataFromRssItem(newItems[0]!);
   const finalState: BoibState = {
     ...lastBulletinState,
+    ...newestMeta,
     customersMatched: allCustomersMatched,
     numMatches: totalMatches,
     processedRssGuids: [...processedGuids],

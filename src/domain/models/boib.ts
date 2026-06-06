@@ -53,6 +53,7 @@ export interface SectionError {
   title: string;
   url: string;
   message: string;
+  bulletin?: string;
 }
 
 /**
