@@ -19,10 +19,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const http = createHttpClient(config);
+  const logger = createLogger();
+  const http = createHttpClient(config, logger);
   const fs = createFileSystem(config);
   const email = createEmailTransport(config);
-  const logger = createLogger();
 
   if (config.sendEmail) {
     try {
