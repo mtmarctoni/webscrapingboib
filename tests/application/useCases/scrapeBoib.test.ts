@@ -428,15 +428,27 @@ describe("runScrape", () => {
 });
 
 describe("withConcurrencyLimit", () => {
+  const mockLogger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    spinner: vi.fn().mockReturnValue({
+      start: vi.fn(),
+      text: "",
+      succeed: vi.fn(),
+      warn: vi.fn(),
+    }),
+  };
+
   it("handles empty array", async () => {
     const fn = vi.fn();
-    await withConcurrencyLimit([], 5, fn);
+    await withConcurrencyLimit([], 5, fn, mockLogger);
     expect(fn).not.toHaveBeenCalled();
   });
 
   it("handles all items failing", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("fail"));
-    await withConcurrencyLimit(["a", "b", "c"], 2, fn);
+    await withConcurrencyLimit(["a", "b", "c"], 2, fn, mockLogger);
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
@@ -444,7 +456,7 @@ describe("withConcurrencyLimit", () => {
     const fn = vi.fn().mockImplementation(async (item: string) => {
       if (item === "b") throw new Error("fail");
     });
-    await withConcurrencyLimit(["a", "b", "c"], 2, fn);
+    await withConcurrencyLimit(["a", "b", "c"], 2, fn, mockLogger);
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
@@ -454,7 +466,7 @@ describe("withConcurrencyLimit", () => {
       order.push(item);
       await new Promise((r) => setTimeout(r, 5));
     });
-    await withConcurrencyLimit(["x", "y", "z"], 1, fn);
+    await withConcurrencyLimit(["x", "y", "z"], 1, fn, mockLogger);
     expect(order).toEqual(["x", "y", "z"]);
     expect(fn).toHaveBeenCalledTimes(3);
   });
