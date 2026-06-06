@@ -2,7 +2,7 @@ import type { AppConfig } from "../config/environment.js";
 import type { Dependencies } from "./useCases/scrapeBoib.js";
 import { runScrape } from "./useCases/scrapeBoib.js";
 
-export interface PipelineResult {
+interface PipelineResult {
   success: boolean;
   error?: string;
 }
