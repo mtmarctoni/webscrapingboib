@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runScrape, withConcurrencyLimit } from "../../../src/application/useCases/scrapeBoib.js";
+import { runScrape } from "../../../src/application/useCases/scrapeBoib.js";
+import { withConcurrencyLimit } from "../../../src/application/utils/concurrency.js";
 import { BOIB_RSS_URL } from "../../../src/config/constants.js";
 import type { AppConfig } from "../../../src/config/environment.js";
 import type { EmailTransport } from "../../../src/infrastructure/email/transport.js";
