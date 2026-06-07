@@ -63,8 +63,8 @@ Blocks direct pushes to `main`. Always use a feature branch + PR.
 
 ## Environment
 
-Enforced by code at startup via `loadConfig()`. Required: `ZOHO_USER`, `ZOHO_PASSWORD`, `WORDTOSEARCH_1`.
-Optional: `WORDTOSEARCH_2..9`, `CUSTOMER_1..7`, `RECIPIENT1..3`, `SEND_EMAIL`.
+Enforced by code at startup via `loadConfig()`. Required: `ZOHO_USER`, `ZOHO_PASSWORD`, `WORDSTOSEARCH`.
+Optional: `CUSTOMERS`, `RECIPIENTS`, `SEND_EMAIL`, `NOTIFY_NO_MATCH`.
 Template: `.env.template`.
 
 ## Branch Strategy
