@@ -24,6 +24,10 @@ export interface BulletinMetadata {
 
 /**
  * Parses the BOIB bulletin index page to extract metadata about the latest bulletin.
+ *
+ * @deprecated Since RSS feed integration (PR #55). Use `bulletinMetadataFromRssItem` instead.
+ *   This function is kept for reference and will be removed in a future release.
+ *
  * @param html - The HTML content of the BOIB index page
  * @param baseUrl - The base URL for constructing absolute links
  * @returns Bulletin metadata including ID, date, and link
