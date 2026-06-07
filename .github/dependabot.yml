@@ -22,9 +22,6 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-        labels:
-          - "security"
-          - "dependencies"
       minor-updates:
         applies-to: version-updates
         update-types:
