@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runScrape, withConcurrencyLimit } from "../../../src/application/useCases/scrapeBoib.js";
+import { runScrape } from "../../../src/application/useCases/scrapeBoib.js";
+import { withConcurrencyLimit } from "../../../src/application/utils/concurrency.js";
 import { BOIB_RSS_URL } from "../../../src/config/constants.js";
 import type { AppConfig } from "../../../src/config/environment.js";
 import type { EmailTransport } from "../../../src/infrastructure/email/transport.js";
@@ -148,6 +149,59 @@ function fullPipelineMock() {
     return { data: SECTION_MENU_HTML };
   }) as unknown as HttpClient["get"];
 }
+
+describe("withConcurrencyLimit", () => {
+  it("processes all items when none fail", async () => {
+    const processed: number[] = [];
+    const logger = { warn: vi.fn() } as unknown as Logger;
+    await withConcurrencyLimit(
+      [1, 2, 3],
+      2,
+      async (n) => {
+        processed.push(n);
+      },
+      logger,
+    );
+    expect(processed).toEqual([1, 2, 3]);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it("logs warning when individual tasks fail", async () => {
+    const logger = { warn: vi.fn() } as unknown as Logger;
+    await withConcurrencyLimit(
+      [1, 2, 3],
+      2,
+      async (n) => {
+        if (n === 2) throw new Error("task failed");
+      },
+      logger,
+    );
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("Concurrent task failed"));
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("task failed"));
+  });
+
+  it("handles empty array", async () => {
+    const logger = { warn: vi.fn() } as unknown as Logger;
+    await withConcurrencyLimit([], 2, async () => {}, logger);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it("continues processing remaining items when one fails", async () => {
+    const processed: number[] = [];
+    const logger = { warn: vi.fn() } as unknown as Logger;
+    await withConcurrencyLimit(
+      [1, 2, 3],
+      1,
+      async (n) => {
+        if (n === 2) throw new Error("task failed");
+        processed.push(n);
+      },
+      logger,
+    );
+    expect(processed).toEqual([1, 3]);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("runScrape", () => {
   let config: AppConfig;

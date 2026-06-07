@@ -55,6 +55,21 @@ export interface SectionError {
   bulletin?: string;
 }
 
+export function isValidBoibState(state: unknown): state is BoibState {
+  if (typeof state !== "object" || state === null) {
+    return false;
+  }
+  const s = state as BoibState;
+  return (
+    typeof s.ultimoBoletin === "string" &&
+    typeof s.linkUltimoBoletin === "string" &&
+    typeof s.idBoib === "string" &&
+    typeof s.idAnualBoib === "string" &&
+    typeof s.dateLastBoib === "string" &&
+    typeof s.numMatches === "number"
+  );
+}
+
 /**
  * Creates a new BoibState with all fields initialised to empty defaults.
  * @returns A fresh, empty BoibState

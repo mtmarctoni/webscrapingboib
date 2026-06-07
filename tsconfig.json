@@ -9,7 +9,9 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "rootDir": ".",
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]
 }

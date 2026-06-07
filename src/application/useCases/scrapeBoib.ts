@@ -8,7 +8,7 @@ import type {
   ScrapeResult,
   SectionError,
 } from "../../domain/models/boib.js";
-import { createEmptyBoibState } from "../../domain/models/boib.js";
+import { createEmptyBoibState, isValidBoibState } from "../../domain/models/boib.js";
 import { parseDocList, parseSectionMenu } from "../../domain/parsers/boibParser.js";
 import { bulletinMetadataFromRssItem, parseRss } from "../../domain/parsers/rssParser.js";
 import { composeEmail, composeNoNewBoibEmail } from "../../infrastructure/email/template.js";
@@ -17,49 +17,8 @@ import type { HttpClient } from "../../infrastructure/http/client.js";
 import type { Logger } from "../../infrastructure/logger.js";
 import type { FileSystem } from "../../infrastructure/storage/fileSystem.js";
 import { buildDownloadFolderName, resolveSafePath } from "../../infrastructure/storage/paths.js";
-
-function assertString(value: unknown, context: string): string {
-  if (typeof value !== "string") {
-    throw new Error(`Expected string response from ${context}, got ${typeof value}`);
-  }
-  return value;
-}
-
-function isValidBoibState(state: unknown): state is BoibState {
-  if (typeof state !== "object" || state === null) {
-    return false;
-  }
-  const s = state as BoibState;
-  return (
-    typeof s.ultimoBoletin === "string" &&
-    typeof s.linkUltimoBoletin === "string" &&
-    typeof s.idBoib === "string" &&
-    typeof s.idAnualBoib === "string" &&
-    typeof s.dateLastBoib === "string" &&
-    typeof s.numMatches === "number"
-  );
-}
-
-const PDF_DOWNLOAD_CONCURRENCY = 5;
-
-export async function withConcurrencyLimit<T>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<void>,
-  logger: Logger,
-): Promise<void> {
-  for (let i = 0; i < items.length; i += limit) {
-    const batch = items.slice(i, i + limit);
-    const results = await Promise.allSettled(batch.map(fn));
-    for (const result of results) {
-      if (result.status === "rejected") {
-        const message =
-          result.reason instanceof Error ? result.reason.message : String(result.reason);
-        logger.warn(`Concurrent task failed: ${message}`);
-      }
-    }
-  }
-}
+import { assertString } from "../utils/assert.js";
+import { PDF_DOWNLOAD_CONCURRENCY, withConcurrencyLimit } from "../utils/concurrency.js";
 
 export interface Dependencies {
   http: HttpClient;
@@ -73,7 +32,7 @@ export async function runScrape(config: AppConfig, deps: Dependencies): Promise<
 
   // Load previous state
   logger.info("Loading previous state...");
-  const raw = await fs.readJson<BoibState>(config.stateFile);
+  const raw = await fs.readJson(config.stateFile);
   if (raw === null) {
     logger.warn("Previous state not found or corrupted. Starting from empty state.");
   }
