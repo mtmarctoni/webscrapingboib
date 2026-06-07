@@ -432,6 +432,20 @@ Not yet implemented. If added, they should use `nock` for HTTP mocking and `memf
 - Positive: TypeScript verifies imports at compile time
 - Negative: Editors may show squiggly lines if not configured for NodeNext
 
+### ADR-006: Email Delivery Is Best-Effort
+
+**Date**: 2026-06-07
+
+**Context**: SMTP verification happens at startup in `main.ts`. If verification fails, the error is logged but execution continues. If `email.send()` fails later during a multi-recipient send, some recipients may have received the email and others not — there is no transactional guarantee.
+
+**Decision**: Accept email as best-effort delivery. SMTP is inherently non-transactional (no prepare/commit/rollback), and adding retry logic, queue persistence, or recipient-level tracking would add significant complexity for an informational notification feature. The application logs send failures, and the pipeline returns `emailSent` in the result.
+
+**Consequences**:
+- Positive: Simple, predictable email flow
+- Positive: No additional infrastructure (queues, retry state) needed
+- Negative: Partial delivery is possible if SMTP fails mid-send
+- Negative: No automatic retry on transient SMTP failures
+
 ### ADR-005: PDF Magic Byte Validation
 
 **Date**: 2026-05-23
