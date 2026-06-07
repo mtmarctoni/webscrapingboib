@@ -32,6 +32,7 @@ export function matchCustomers(
   const matches: CustomerMatch[] = [];
   const $ = cheerio.load(htmlText);
   const tables = $("table");
+  const normalizedCustomers = customers.map((c) => [c, normalize(c)] as const);
 
   tables.each((tableIdx, table) => {
     const rows = $(table).find("tr");
@@ -40,8 +41,8 @@ export function matchCustomers(
       cells.each((cellIdx, cell) => {
         const cellText = $(cell).text();
         const normalizedCellText = normalize(cellText);
-        for (const customer of customers) {
-          if (normalizedCellText.includes(normalize(customer))) {
+        for (const [customer, normalizedCustomer] of normalizedCustomers) {
+          if (normalizedCellText.includes(normalizedCustomer)) {
             matches.push({
               docId,
               tableIndex: tableIdx + 1,
