@@ -1,20 +1,15 @@
 import nock from "nock";
 import { describe, expect, it, vi } from "vitest";
 import { createHttpClient } from "../../../src/infrastructure/http/client.js";
+import type { Logger } from "../../../src/infrastructure/logger.js";
 
 describe("createHttpClient", () => {
   const allowedDomain = "https://www.caib.es";
-  const logger = {
+  const logger: Logger = {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    spinner: vi.fn().mockReturnValue({
-      start: vi.fn(),
-      succeed: vi.fn(),
-      fail: vi.fn(),
-      warn: vi.fn(),
-      text: "",
-    }),
+    spinner: vi.fn() as unknown as Logger["spinner"],
   };
   const config = {
     baseUrl: `${allowedDomain}/eboibfront/ca`,
