@@ -4,8 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    labels:
-      - "ci"
 
   - package-ecosystem: "npm"
     directory: "/"
