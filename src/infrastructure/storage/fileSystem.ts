@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]);
 
 export interface FileSystem {
-  readJson<T>(filePath: string): Promise<T | null>;
+  readJson(filePath: string): Promise<unknown | null>;
   writeJson<T>(filePath: string, data: T): Promise<void>;
   mkdir(dirPath: string): Promise<void>;
   readdir(dirPath: string): Promise<string[]>;
@@ -14,22 +14,18 @@ export interface FileSystem {
 /** Creates a FileSystem wrapping the native fs/promises module with JSON helpers and PDF validation. */
 export function createFileSystem(): FileSystem {
   return {
-    async readJson<T>(filePath: string): Promise<T | null> {
+    async readJson(filePath: string): Promise<unknown | null> {
       try {
         const content = await fs.readFile(filePath, "utf8");
         if (!content.trim()) {
           return null;
         }
-        return JSON.parse(content) as T;
+        return JSON.parse(content);
       } catch (err: unknown) {
         if (err instanceof SyntaxError) {
           return null;
         }
-        if (
-          err instanceof Error &&
-          "code" in err &&
-          (err as NodeJS.ErrnoException).code === "ENOENT"
-        ) {
+        if (err instanceof Error && "code" in err && err.code === "ENOENT") {
           return null;
         }
         throw err;
