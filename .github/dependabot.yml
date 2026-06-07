@@ -1,5 +1,10 @@
 version: 2
 updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -17,9 +22,6 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-        labels:
-          - "security"
-          - "dependencies"
       minor-updates:
         applies-to: version-updates
         update-types:
