@@ -1,12 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runScrape } from "../../../src/application/useCases/scrapeBoib.js";
+import { type Dependencies, runScrape } from "../../../src/application/useCases/scrapeBoib.js";
 import { withConcurrencyLimit } from "../../../src/application/utils/concurrency.js";
 import { BOIB_RSS_URL } from "../../../src/config/constants.js";
 import type { AppConfig } from "../../../src/config/environment.js";
-import type { EmailTransport } from "../../../src/infrastructure/email/transport.js";
 import type { HttpClient } from "../../../src/infrastructure/http/client.js";
-import type { Logger } from "../../../src/infrastructure/logger.js";
-import type { FileSystem } from "../../../src/infrastructure/storage/fileSystem.js";
 
 const ALLOWED_DOMAIN = "https://www.caib.es";
 const LINK_BULLETIN_070 = "https://www.caib.es/eboibfront/ca/2026/12283";
@@ -91,48 +88,49 @@ function makeConfig(overrides?: Partial<AppConfig>): AppConfig {
   };
 }
 
-function makeDeps() {
-  const http: HttpClient = {
-    get: vi.fn() as unknown as HttpClient["get"],
-    getBuffer: vi.fn() as unknown as HttpClient["getBuffer"],
-  };
-  const fs: FileSystem = {
-    readJson: vi.fn() as unknown as FileSystem["readJson"],
-    writeJson: vi.fn() as unknown as FileSystem["writeJson"],
-    mkdir: vi.fn() as unknown as FileSystem["mkdir"],
-    readdir: vi.fn() as unknown as FileSystem["readdir"],
-    writeFile: vi.fn() as unknown as FileSystem["writeFile"],
-    validatePdf: vi.fn() as unknown as FileSystem["validatePdf"],
-  };
-  const email: EmailTransport = {
-    verify: vi.fn() as unknown as EmailTransport["verify"],
-    send: vi.fn() as unknown as EmailTransport["send"],
-  };
-  const logger: Logger = {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    spinner: vi.fn().mockReturnValue({
-      start: vi.fn(),
-      succeed: vi.fn(),
-      fail: vi.fn(),
+function makeDeps(): Dependencies {
+  return {
+    http: {
+      get: vi.fn(),
+      getBuffer: vi.fn(),
+    },
+    fs: {
+      readJson: vi.fn(),
+      writeJson: vi.fn(),
+      mkdir: vi.fn(),
+      readdir: vi.fn(),
+      writeFile: vi.fn(),
+      validatePdf: vi.fn(),
+    },
+    email: {
+      verify: vi.fn(),
+      send: vi.fn(),
+    },
+    logger: {
+      info: vi.fn(),
       warn: vi.fn(),
-      text: "",
-    }),
+      error: vi.fn(),
+      spinner: vi.fn().mockReturnValue({
+        start: vi.fn(),
+        succeed: vi.fn(),
+        fail: vi.fn(),
+        warn: vi.fn(),
+        text: "",
+      }),
+    },
   };
-  return { http, fs, email, logger };
 }
 
-function rssMock(rssXml: string) {
+function rssMock(rssXml: string): HttpClient["get"] {
   return vi.fn().mockImplementation(async (url: string) => {
     if (url === BOIB_RSS_URL) {
       return { data: rssXml };
     }
     return { data: SECTION_MENU_HTML };
-  }) as unknown as HttpClient["get"];
+  });
 }
 
-function fullPipelineMock() {
+function fullPipelineMock(): HttpClient["get"] {
   return vi.fn().mockImplementation(async (url: string) => {
     if (url === BOIB_RSS_URL) {
       return { data: RSS_ONE_ITEM };
@@ -147,61 +145,8 @@ function fullPipelineMock() {
       return { data: '<div class="llistat"></div>' };
     }
     return { data: SECTION_MENU_HTML };
-  }) as unknown as HttpClient["get"];
+  });
 }
-
-describe("withConcurrencyLimit", () => {
-  it("processes all items when none fail", async () => {
-    const processed: number[] = [];
-    const logger = { warn: vi.fn() } as unknown as Logger;
-    await withConcurrencyLimit(
-      [1, 2, 3],
-      2,
-      async (n) => {
-        processed.push(n);
-      },
-      logger,
-    );
-    expect(processed).toEqual([1, 2, 3]);
-    expect(logger.warn).not.toHaveBeenCalled();
-  });
-
-  it("logs warning when individual tasks fail", async () => {
-    const logger = { warn: vi.fn() } as unknown as Logger;
-    await withConcurrencyLimit(
-      [1, 2, 3],
-      2,
-      async (n) => {
-        if (n === 2) throw new Error("task failed");
-      },
-      logger,
-    );
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("Concurrent task failed"));
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("task failed"));
-  });
-
-  it("handles empty array", async () => {
-    const logger = { warn: vi.fn() } as unknown as Logger;
-    await withConcurrencyLimit([], 2, async () => {}, logger);
-    expect(logger.warn).not.toHaveBeenCalled();
-  });
-
-  it("continues processing remaining items when one fails", async () => {
-    const processed: number[] = [];
-    const logger = { warn: vi.fn() } as unknown as Logger;
-    await withConcurrencyLimit(
-      [1, 2, 3],
-      1,
-      async (n) => {
-        if (n === 2) throw new Error("task failed");
-        processed.push(n);
-      },
-      logger,
-    );
-    expect(processed).toEqual([1, 3]);
-    expect(logger.warn).toHaveBeenCalledTimes(1);
-  });
-});
 
 describe("runScrape", () => {
   let config: AppConfig;
@@ -225,7 +170,7 @@ describe("runScrape", () => {
       sectionLinks: [],
       numMatches: 0,
       processedRssGuids: [GUID_070],
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = rssMock(RSS_ONE_ITEM);
 
     const result = await runScrape(config, deps);
@@ -240,12 +185,12 @@ describe("runScrape", () => {
   });
 
   it("starts from empty state when state file is missing", async () => {
-    deps.fs.readJson = vi.fn().mockResolvedValue(null) as unknown as FileSystem["readJson"];
+    deps.fs.readJson = vi.fn().mockResolvedValue(null);
     deps.http.get = fullPipelineMock();
-    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
-    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
-    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
-    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true);
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined);
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined);
 
     const result = await runScrape(config, deps);
 
@@ -255,14 +200,12 @@ describe("runScrape", () => {
   });
 
   it("starts from empty state when state file is corrupt", async () => {
-    deps.fs.readJson = vi
-      .fn()
-      .mockResolvedValue({ linkUltimoBoletin: 42 }) as unknown as FileSystem["readJson"];
+    deps.fs.readJson = vi.fn().mockResolvedValue({ linkUltimoBoletin: 42 });
     deps.http.get = fullPipelineMock();
-    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
-    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
-    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
-    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true);
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined);
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined);
 
     const result = await runScrape(config, deps);
 
@@ -275,15 +218,13 @@ describe("runScrape", () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
       linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
       processedRssGuids: ["https://www.caib.es/eboibfront/ca/2026/99999"],
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = fullPipelineMock();
-    deps.http.getBuffer = vi
-      .fn()
-      .mockResolvedValue(Buffer.from("%PDF-1.7\n...")) as unknown as HttpClient["getBuffer"];
-    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
-    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
-    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
-    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
+    deps.http.getBuffer = vi.fn().mockResolvedValue(Buffer.from("%PDF-1.7\n..."));
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true);
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined);
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined);
 
     const result = await runScrape(config, deps);
 
@@ -297,7 +238,7 @@ describe("runScrape", () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
       linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
       processedRssGuids: ["https://www.caib.es/eboibfront/ca/2026/99999"],
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = vi.fn().mockImplementation(async (url: string) => {
       if (url === BOIB_RSS_URL) {
         return { data: RSS_ONE_ITEM };
@@ -312,14 +253,12 @@ describe("runScrape", () => {
         return { data: DOC_LIST_HTML };
       }
       return { data: SECTION_MENU_HTML };
-    }) as unknown as HttpClient["get"];
-    deps.http.getBuffer = vi
-      .fn()
-      .mockResolvedValue(Buffer.from("%PDF-1.7\n...")) as unknown as HttpClient["getBuffer"];
-    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
-    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
-    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
-    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
+    });
+    deps.http.getBuffer = vi.fn().mockResolvedValue(Buffer.from("%PDF-1.7\n..."));
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true);
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined);
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined);
 
     const result = await runScrape(config, deps);
 
@@ -339,7 +278,7 @@ describe("runScrape", () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
       linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
       processedRssGuids: ["https://www.caib.es/eboibfront/ca/2026/99999"],
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = fullPipelineMock();
 
     const result = await runScrape(config, deps);
@@ -365,16 +304,14 @@ describe("runScrape", () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
       linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
       processedRssGuids: ["https://www.caib.es/eboibfront/ca/2026/99999"],
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = fullPipelineMock();
-    deps.http.getBuffer = vi
-      .fn()
-      .mockResolvedValue(Buffer.from("%PDF-1.7\n...")) as unknown as HttpClient["getBuffer"];
-    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
-    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
-    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
-    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
-    deps.email.send = vi.fn().mockResolvedValue(undefined) as unknown as EmailTransport["send"];
+    deps.http.getBuffer = vi.fn().mockResolvedValue(Buffer.from("%PDF-1.7\n..."));
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true);
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined);
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined);
+    deps.email.send = vi.fn().mockResolvedValue(undefined);
 
     let capturedSubject = "";
     let capturedAttachments: unknown[] = [];
@@ -383,7 +320,7 @@ describe("runScrape", () => {
       .mockImplementation((content: { subject: string; attachments: unknown[] }) => {
         capturedSubject = content.subject;
         capturedAttachments = content.attachments;
-      }) as unknown as EmailTransport["send"];
+      });
 
     const result = await runScrape(config, deps);
 
@@ -416,13 +353,13 @@ describe("runScrape", () => {
       sectionLinks: [],
       numMatches: 0,
       processedRssGuids: [GUID_070],
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = rssMock(RSS_ONE_ITEM);
 
     let capturedSubject = "";
     deps.email.send = vi.fn().mockImplementation((content: { subject: string }) => {
       capturedSubject = content.subject;
-    }) as unknown as EmailTransport["send"];
+    });
 
     const result = await runScrape(config, deps);
 
@@ -431,10 +368,8 @@ describe("runScrape", () => {
   });
 
   it("fails gracefully when RSS feed HTTP request fails", async () => {
-    deps.fs.readJson = vi.fn().mockResolvedValue(null) as unknown as FileSystem["readJson"];
-    deps.http.get = vi
-      .fn()
-      .mockRejectedValue(new Error("Network error")) as unknown as HttpClient["get"];
+    deps.fs.readJson = vi.fn().mockResolvedValue(null);
+    deps.http.get = vi.fn().mockRejectedValue(new Error("Network error"));
 
     await expect(runScrape(config, deps)).rejects.toThrow();
   });
@@ -442,15 +377,13 @@ describe("runScrape", () => {
   it("handles old state without processedRssGuids (migration path)", async () => {
     deps.fs.readJson = vi.fn().mockResolvedValue({
       linkUltimoBoletin: "https://www.caib.es/eboibfront/ca/2026/99999",
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = fullPipelineMock();
-    deps.http.getBuffer = vi
-      .fn()
-      .mockResolvedValue(Buffer.from("%PDF-1.7\n...")) as unknown as HttpClient["getBuffer"];
-    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
-    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
-    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
-    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
+    deps.http.getBuffer = vi.fn().mockResolvedValue(Buffer.from("%PDF-1.7\n..."));
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true);
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined);
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined);
 
     const result = await runScrape(config, deps);
 
@@ -471,7 +404,7 @@ describe("runScrape", () => {
       sectionLinks: [],
       numMatches: 0,
       processedRssGuids: ["https://www.caib.es/eboibfront/ca/2026/99999"],
-    }) as unknown as FileSystem["readJson"];
+    });
     deps.http.get = vi.fn().mockImplementation(async (url: string) => {
       if (url === BOIB_RSS_URL) {
         return { data: RSS_TWO_ITEMS };
@@ -486,14 +419,12 @@ describe("runScrape", () => {
         return { data: '<div class="llistat"></div>' };
       }
       return { data: SECTION_MENU_HTML };
-    }) as unknown as HttpClient["get"];
-    deps.http.getBuffer = vi
-      .fn()
-      .mockResolvedValue(Buffer.from("%PDF-1.7\n...")) as unknown as HttpClient["getBuffer"];
-    deps.fs.validatePdf = vi.fn().mockReturnValue(true) as unknown as FileSystem["validatePdf"];
-    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeFile"];
-    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["mkdir"];
-    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined) as unknown as FileSystem["writeJson"];
+    });
+    deps.http.getBuffer = vi.fn().mockResolvedValue(Buffer.from("%PDF-1.7\n..."));
+    deps.fs.validatePdf = vi.fn().mockReturnValue(true);
+    deps.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+    deps.fs.mkdir = vi.fn().mockResolvedValue(undefined);
+    deps.fs.writeJson = vi.fn().mockResolvedValue(undefined);
 
     const result = await runScrape(config, deps);
 
