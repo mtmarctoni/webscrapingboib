@@ -46,14 +46,14 @@
     ]
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
-    "@types/node": "25.9.2",
+    "@biomejs/biome": "2.5.0",
+    "@types/node": "25.9.3",
     "@types/nodemailer": "8.0.0",
-    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/coverage-v8": "4.1.9",
     "dependency-cruiser": "17.4.3",
     "knip": "6.16.1",
     "nock": "14.0.15",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.9"
   }
 }
